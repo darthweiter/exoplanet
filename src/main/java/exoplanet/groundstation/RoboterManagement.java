@@ -13,6 +13,8 @@ import java.net.URISyntaxException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 
+import org.apache.http.client.utils.URIBuilder;
+
 
 public class RoboterManagement extends Thread {
 
@@ -52,7 +54,14 @@ public class RoboterManagement extends Thread {
 					
 				}else if(split[0].contains("landed:MEASURE")) {
 					System.out.println("Roboter bei rm: "+robot);
-					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/"+robot.getId(), robot);
+					String robotId  = String.valueOf(robot.getId());
+					String uri;
+					try {
+						uri = String.valueOf(new URIBuilder("http://localhost:12345/api/v1/roboter/").addParameter("id", robotId));
+						bs.createRestRequest("PUT", uri, robot); 
+					} catch (URISyntaxException e) {
+						e.printStackTrace();
+					}
 					bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten", new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), split[1], Double.parseDouble(split[2])));
 					bs.ausgabe("Erfolgreich gelandet");
 					
