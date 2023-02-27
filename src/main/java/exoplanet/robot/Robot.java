@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Robot {
 
 	@JsonProperty("id")
-	private int id;
+	private long id;
 	@JsonProperty("pid")
 	private long planetId;
 	@JsonProperty("x")
@@ -34,14 +34,13 @@ public class Robot {
 		
 	}
 	
-	public Robot(String name, int planetId, String hostnameStation, int portStation, boolean useJson) {
+	public Robot(String name, long planetId, String hostnameStation, int portStation, boolean useJson) {
 		this.name = name;
 		status = Status.WORKING;
-		temperatur = 20;
+		temperatur = 0;
 		energie = 100;
 		this.planetId = planetId;
 		this.useJson = useJson;
-		connectToStation(hostnameStation, portStation);
 		
 	}
 
@@ -68,26 +67,26 @@ public class Robot {
 		planetReceiver.sendToPlanet("mvscan");
 	}
 
-	public void rotate(String rotation) {
-		if(rotation.equalsIgnoreCase("left") && direction == Direction.NORTH) {
-			setDirection(Direction.WEST);
-		} else if (rotation.equalsIgnoreCase("left")  && direction == Direction.EAST) {
-			setDirection(Direction.NORTH);
-		} else if (rotation.equalsIgnoreCase("left")  && direction == Direction.SOUTH) {
-			setDirection(Direction.SOUTH);
-		}else if (rotation.equalsIgnoreCase("left")  && direction == Direction.WEST) {
-			setDirection(Direction.EAST);
-		}else if (rotation.equalsIgnoreCase("right")  && direction == Direction.NORTH) {
-			setDirection(Direction.EAST);
-		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.EAST) {
-			setDirection(Direction.SOUTH);
-		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.SOUTH) {
-			setDirection(Direction.WEST);
-		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.WEST) {
-			setDirection(Direction.NORTH);
-		}
-		planetReceiver.sendToPlanet("rotate:" + rotation);
-	}
+//	public void rotate(String rotation) {
+//		if(rotation.equalsIgnoreCase("left") && direction == Direction.NORTH) {
+//			setDirection(Direction.WEST);
+//		} else if (rotation.equalsIgnoreCase("left")  && direction == Direction.EAST) {
+//			setDirection(Direction.NORTH);
+//		} else if (rotation.equalsIgnoreCase("left")  && direction == Direction.SOUTH) {
+//			setDirection(Direction.SOUTH);
+//		}else if (rotation.equalsIgnoreCase("left")  && direction == Direction.WEST) {
+//			setDirection(Direction.EAST);
+//		}else if (rotation.equalsIgnoreCase("right")  && direction == Direction.NORTH) {
+//			setDirection(Direction.EAST);
+//		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.EAST) {
+//			setDirection(Direction.SOUTH);
+//		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.SOUTH) {
+//			setDirection(Direction.WEST);
+//		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.WEST) {
+//			setDirection(Direction.NORTH);
+//		}
+//		planetReceiver.sendToPlanet("rotate:" + rotation);
+//	}
 	
 	public void sendToStation(String message) {
 		stationReceiver.sendToStation(message);
@@ -173,11 +172,15 @@ public class Robot {
 		return planetId;
 	}
 	
-	public int getId(){
+	public void setPlanetId(long planetId) {
+		this.planetId = planetId;
+	}
+	
+	public long getId(){
 		return id;
 	}
 	
-	public void setId(int id){
+	public void setId(long id){
 		this.id = id;
 	}
 	

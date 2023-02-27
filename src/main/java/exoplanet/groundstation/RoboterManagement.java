@@ -23,9 +23,11 @@ public class RoboterManagement extends Thread {
 	private Robot robot;
 	
 	public RoboterManagement(Bodenstation bs, Socket socketRoboter, Robot robot){
+		System.out.println("RM Robot: "+robot);
+		
+		this.robot = robot;
 		this.bs = bs;
 		this.robotSocket = socketRoboter;
-		this.robot = robot;
 		try {
 			in = new BufferedReader(new InputStreamReader(robotSocket.getInputStream()));
 			out = new PrintWriter(robotSocket.getOutputStream(), true);
@@ -40,37 +42,41 @@ public class RoboterManagement extends Thread {
 	public void run() {
 		String messageFromRobot;
 		try {
-			//TODO
-			while(true) {
-				System.out.println("warte auf Robot");
+			while(robot.getStatus() != Status.CRASHED) {
 				messageFromRobot = in.readLine();
-				System.out.println("Nachricht Robot erhalten");
 				System.out.println(messageFromRobot);
 				String[] split = messageFromRobot.split("\\|");
-				if(split[0].contains("inti:SIZE")) {
+				if(split[0].contains("init:SIZE")) {
+					System.out.println("Planetisknown");
 					bs.isPlanetKnown(split);
 					
 				}else if(split[0].contains("landed:MEASURE")) {
-//					bs.saveMeasure(robot, split[1], split[2]);
+					System.out.println("Roboter bei rm: "+robot);
+					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/"+robot.getId(), robot);
 					bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten", new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), split[1], Double.parseDouble(split[2])));
+					bs.ausgabe("Erfolgreich gelandet");
 					
 				}else if(split[0].contains("scaned:MEASURE")) {
 					bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten", new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), split[1], Double.parseDouble(split[2])));
+					bs.ausgabe("Erfolgreicher scan");
 					
 				}else if(split[0].contains("moved:POSITION")) {
 					robot.setX(Integer.parseInt(split[1]));
 					robot.setY(Integer.parseInt(split[2]));
 					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/" + robot.getId(), robot);
+					bs.ausgabe("Erfoglreich bewegt");
 					
 				}else if(split[0].contains("mvscaned")) {
 					
 				}else if(split[0].contains("rotated")){
-					robot.rotate(split[0].split(":")[1]);
+					robot.setDirection(Direction.valueOf(messageFromRobot.split(":")[1]));
 					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/" + robot.getId(), robot);
+					bs.ausgabe("Erfolgreich rotiert");
 					
 				}else if(split[0].contains("crashed")) {
 					robot.setStatus(Status.CRASHED);
 					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/" + robot.getId(), robot);
+					bs.ausgabe("Roboter kaputt");
 					
 				}else if(split[0].contains("error")) {
 					bs.ausgabe("Error vom Planeten: " + split[0].split(":")[1]);
@@ -80,6 +86,10 @@ public class RoboterManagement extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void updateRobotPosition(int x, int y, Direction direction) {
+		
 	}
 	
 	public int getNewX() {

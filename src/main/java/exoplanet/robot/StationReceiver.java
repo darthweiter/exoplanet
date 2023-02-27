@@ -45,7 +45,7 @@ public class StationReceiver extends Thread{
 					robot.move();
 					robot.scan();
 				}else if(split[0].contains("rotate")) {
-					robot.rotate(split[1]);
+					robot.sendToPlanet(commandStation);
 				}else if(split[0].contains("exit")) {
 					robot.exit();
 				}else if(split[0].contains("orbit")){
