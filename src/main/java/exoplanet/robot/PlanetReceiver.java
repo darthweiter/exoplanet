@@ -1,5 +1,8 @@
 package exoplanet.robot;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import exoplanet.commands.error.CommandNotFoundException;
+import exoplanet.parsing.JSONCommandParser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,9 +17,13 @@ public class PlanetReceiver extends Thread {
 	private PrintWriter out;
 	
 	private Robot robot;
+
+//TODO flag korrekt einbauen, ob JSON verwendet werden soll oder nicht
+	private boolean useJson = true;
 	
-	public PlanetReceiver(Robot robot, String hostname, int port) {
+	public PlanetReceiver(Robot robot, String hostname, int port, boolean useJson) {
 		this.robot = robot;
+		this.useJson = useJson;
 		try {
 			socket = new Socket(hostname, port);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -44,6 +51,9 @@ public class PlanetReceiver extends Thread {
 				messagePlanet = in.readLine();
 				System.out.println("nachricht erhalten");
 				System.out.println(messagePlanet);
+				if(useJson) {
+					messagePlanet = JSONCommandParser.parseJson(messagePlanet);
+				}
 				if(messagePlanet.split("\\|")[0].equals("moved:POSITION")) {
 					robot.updatePosition(messagePlanet);
 				} else if(messagePlanet.split("\\|")[0].equals("mvscaned:MEASURE")) {
@@ -55,6 +65,8 @@ public class PlanetReceiver extends Thread {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		} catch (CommandNotFoundException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -63,7 +75,16 @@ public class PlanetReceiver extends Thread {
 	}
 
 	public void sendToPlanet(String messageToPlanet) {
-		out.println(messageToPlanet);
+
+		 try {
+			 if (useJson) {
+				 out.println(JSONCommandParser.toJson(messageToPlanet));
+			 } else {
+				 out.println(messageToPlanet);
+			 }
+		 } catch (JsonProcessingException | CommandNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }

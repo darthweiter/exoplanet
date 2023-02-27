@@ -40,6 +40,9 @@ public class Bodenstation {
 	
 	private  String hostnamePlanet;
 	private  int portPlanet;
+
+	//TODO use this flag for using JSON-Protocol instead of normal Protocol, it intercept the messages and encode/decode the msg correctly
+	private boolean useJson;
 	
 	private  Robot currentRobot;
 	private ObjectMapper mapper = new ObjectMapper();
@@ -274,7 +277,7 @@ public class Bodenstation {
 					String planetName = scanner.nextLine();
 					for(Planet planet : planetList) {
 						if(planet.getName().equalsIgnoreCase(planetName)) {
-							currentRobot = new Robot(robotName, planet.getId(), hostnameStation, portStation);
+							currentRobot = new Robot(robotName, planet.getId(), hostnameStation, portStation, useJson);
 							HttpResponse response = createRestRequest("POST", "http://localhost:12345/api/v1/roboter", currentRobot);
 							if(response.getStatusLine().getStatusCode() == 200){
 								robotList.add(currentRobot);

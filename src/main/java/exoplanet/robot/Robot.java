@@ -28,17 +28,19 @@ public class Robot {
 	private PlanetReceiver planetReceiver;
 	private StationReceiver stationReceiver;
 
+	private boolean useJson;
+
 	public Robot() {
 		
 	}
 	
-	public Robot(String name, int planetId, String hostnameStation, int portStation) {
+	public Robot(String name, int planetId, String hostnameStation, int portStation, boolean useJson) {
 		this.name = name;
 		status = Status.WORKING;
 		temperatur = 20;
 		energie = 100;
 		this.planetId = planetId;
-
+		this.useJson = useJson;
 		connectToStation(hostnameStation, portStation);
 		
 	}
@@ -49,7 +51,7 @@ public class Robot {
 	}
 	
 	public void connectToPlanet(String hostnamePlanet, int portPlanet) {
-		planetReceiver = new PlanetReceiver(this, hostnamePlanet, portPlanet);
+		planetReceiver = new PlanetReceiver(this, hostnamePlanet, portPlanet, useJson);
 		planetReceiver.start();
 		
 	}
