@@ -42,8 +42,7 @@ public class JSONCommandParser {
     if (input.startsWith(SendCommandOrbit.CMD_NAME)) {
       //orbit:robotname
       String[] commandName = input.split(COLON);
-      String[] split2 = commandName[1].split(PIPE);
-      return mapper.writeValueAsString(new SendCommandOrbit(split2[1]));
+      return mapper.writeValueAsString(new SendCommandOrbit(commandName[1]));
     } else if (input.startsWith(SendCommandLand.CMD_NAME)) {
       //land:POSITION|x|y|direction
       String[] commandName = input.split(COLON);

@@ -12,7 +12,7 @@ public class JSONCommandParserTest {
   @Test
   public void toJason_commandOfOrbit_returnsJSON()
       throws JsonProcessingException, CommandNotFoundException {
-    final String CMD_INPUT = "orbit:Testplanet|Robotername";
+    final String CMD_INPUT = "orbit:Robotername";
     String expected = "{\"CMD\":\"orbit\",\"NAME\":\"Robotername\"}";
 
     String result = JSONCommandParser.toJson(CMD_INPUT);
