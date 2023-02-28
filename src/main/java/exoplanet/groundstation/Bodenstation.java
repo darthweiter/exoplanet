@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.receive.ReceiveCommandInit;
 import exoplanet.robot.Robot;
+import exoplanet.robot.Status;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,8 +30,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-
 
 public class Bodenstation {
 
@@ -71,7 +71,7 @@ public class Bodenstation {
 				while (!Thread.interrupted()) {
 					try {
 						Socket robotSocket = serverSocket.accept();
-						System.out.println("cuurentRobot: " +currentRobot);
+						System.out.println("cuurentRobot: " + currentRobot);
 						Robot robotTemp = currentRobot;
 						robots.add(new RoboterManagement(Bodenstation.this, robotSocket, robotTemp));
 					} catch (SocketTimeoutException e) {
@@ -136,62 +136,63 @@ public class Bodenstation {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void isPlanetKnown(ReceiveCommandInit command) {
 		try {
+			Planet newPlanet = null;
 			Planet planetTemp;
 			Robot robotTemp;
+			boolean isNewPlanet = false;
 			HttpResponse response = null;
-			boolean keinNeuerPlanet = false;
-			int x = 0;
 			for (Planet planet : planetList) {
-				x++;
 				if (planet.getId() == 0) {
-					planetTemp = new Planet(0, planet.getName(), command.getSize().width(),
-							command.getSize().height());
-					response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten", planetTemp);
-					var content = response.getEntity().getContent();
-					BufferedReader reader = new BufferedReader(new InputStreamReader(content));
-					String contentValue = reader.readLine();
-					JsonNode node = mapper.readTree(contentValue);
-					System.out.println(node);
+					newPlanet = planet;
+					isNewPlanet = true;
+				}
+			}
 
-					planetTemp = mapper.readValue(contentValue, Planet.class);
-					currentRobot.setPlanetId(planetTemp.getId());
+			if (isNewPlanet) {
+				planetTemp = new Planet(0, newPlanet.getName(), command.getSize().width(), command.getSize().height());
+				response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten", planetTemp);
+				var content = response.getEntity().getContent();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(content));
+				String contentValue = reader.readLine();
+				JsonNode node = mapper.readTree(contentValue);
+				System.out.println(node);
 
-					for (int i = 0; i <= planetList.size() - 1; i++) {
-						if (planetList.get(i).getName().equalsIgnoreCase(planetTemp.getName())) {
-							planetList.get(i).setId(planetTemp.getId());
-							planetList.get(i).setHeight(planetTemp.getHeight());
-							planetList.get(i).setWidth(planetTemp.getWidth());
-						}
-					}
+				planetTemp = mapper.readValue(contentValue, Planet.class);
+				currentRobot.setPlanetId(planetTemp.getId());
 
-					response = createRestRequest("POST", "http://localhost:12345/api/v1/roboter", currentRobot);
-					robotTemp = mapper.readValue(response.getEntity().getContent(), Robot.class);
-					for (int i = 0; i <= robotList.size() - 1; i++) {
-						if (robotList.get(i).getName().equalsIgnoreCase(robotTemp.getName())) {
-							robotList.get(i).setId(robotTemp.getId());
-							robotList.get(i).setPlanetId(robotTemp.getPlanetId());
-						}
-					}
-
-					if (planetList.size() == x) {
-						keinNeuerPlanet = true;
+				for (int i = 0; i <= planetList.size() - 1; i++) {
+					if (planetList.get(i).getName().equalsIgnoreCase(planetTemp.getName())) {
+						planetList.get(i).setId(planetTemp.getId());
+						planetList.get(i).setHeight(planetTemp.getHeight());
+						planetList.get(i).setWidth(planetTemp.getWidth());
 					}
 				}
 
-				if (planet.getId() != 0 && keinNeuerPlanet) {
-					response = createRestRequest("POST", "http://localhost:12345/api/v1/roboter", currentRobot);
-					robotTemp = mapper.readValue(response.getEntity().getContent(), Robot.class);
-					for (int i = 0; i <= robotList.size() - 1; i++) {
-						if (robotList.get(i).getName().equalsIgnoreCase(robotTemp.getName())) {
-							robotList.get(i).setId(robotTemp.getId());
-							robotList.get(i).setPlanetId(robotTemp.getPlanetId());
-						}
+				response = createRestRequest("POST", "http://localhost:12345/api/v1/roboter", currentRobot);
+				robotTemp = mapper.readValue(response.getEntity().getContent(), Robot.class);
+				for (int i = 0; i <= robotList.size() - 1; i++) {
+					if (robotList.get(i).getName().equalsIgnoreCase(robotTemp.getName())) {
+						robotList.get(i).setId(robotTemp.getId());
+						robotList.get(i).setPlanetId(robotTemp.getPlanetId());
+
 					}
 				}
 			}
+
+			if (!isNewPlanet) {
+				response = createRestRequest("POST", "http://localhost:12345/api/v1/roboter", currentRobot);
+				robotTemp = mapper.readValue(response.getEntity().getContent(), Robot.class);
+				for (int i = 0; i <= robotList.size() - 1; i++) {
+					if (robotList.get(i).getName().equalsIgnoreCase(robotTemp.getName())) {
+						robotList.get(i).setId(robotTemp.getId());
+						robotList.get(i).setPlanetId(robotTemp.getPlanetId());
+					}
+				}
+			}
+
 		} catch (StreamReadException e) {
 			e.printStackTrace();
 		} catch (DatabindException e) {
@@ -204,8 +205,6 @@ public class Bodenstation {
 
 	}
 
-
-
 	public void ausgabe(String ausgabe) {
 		System.out.println(ausgabe);
 	}
@@ -217,6 +216,7 @@ public class Bodenstation {
 			} catch (Exception e) {
 			}
 		});
+		System.exit(0);
 	}
 
 	public String eingabe() {
@@ -225,7 +225,7 @@ public class Bodenstation {
 
 	public RoboterManagement getRM() {
 		for (RoboterManagement rm : robots) {
-			System.out.println("currentrobot id "+currentRobot);
+			System.out.println("currentrobot id " + currentRobot);
 			System.out.println(robots.size());
 			if (currentRobot != null && rm.getRobot().getName().equals(currentRobot.getName())) {
 				return rm;
@@ -247,10 +247,13 @@ public class Bodenstation {
 		System.out.println("move -> Bewege Roboter in die Richtung, in die er schaut");
 		System.out.println("scan -> Scanne das Feld vor dem Roboter");
 		System.out.println("mvscan -> Bewege Roboter in die Richtung, in die er schaut und scanne das Feld");
-		System.out.println("rotate|Richtung -> Roboter dreht sich, für 'Richtung' 'left' oder 'right' eingeben");
+		System.out.println("rotate:Richtung -> Roboter dreht sich, für 'Richtung' 'left' oder 'right' eingeben");
 		System.out.println("exit -> Roboter wird aufgegeben");
+		System.out.println("charge:duration -> Roboter versucht Energie über Solar zu erzeugen, Duration gibt einen Sekundenwert an");
+		// Muss für JSON-Kommunikation vor der Erstellung des Roboters ausgeführt werden, wenn es noch auf Textprotokoll ist
+		System.out.println("json -> wechselt zwischen JSON Protokoll und TextProtokoll bei neuen Robotern. Ist Standardmäßig auf Textprotokoll");
+		System.out.println("currentRobot -> zeige den momentan ausgewählten Roboter an");
 		System.out.println("shutdown -> Bodenstation wird geschlossen");
-
 	}
 
 	public boolean checkRobotName(String eingabeRobotName) {
@@ -270,39 +273,36 @@ public class Bodenstation {
 		HttpPut put = null;
 		HttpGet get = null;
 		try {
-		
-		if(requestType.equals("POST")) {
-			post = new HttpPost(uri);
-			StringEntity params = new StringEntity(mapper.writeValueAsString(object), ContentType.APPLICATION_JSON);
-			//post.addHeader("content-type", "application/");
-			post.setEntity(params);
-			
-			return client.execute(post);
-			
-			
-		}else if (requestType.equals("PUT")) {
-			put = new HttpPut(uri);
-			StringEntity params = new StringEntity(mapper.writeValueAsString(object), ContentType.APPLICATION_JSON);
-			//put.addHeader("content-type", "application/x-www-form-urlencoded");
-			put.setEntity(params);
 
+			if (requestType.equals("POST")) {
+				post = new HttpPost(uri);
+				StringEntity params = new StringEntity(mapper.writeValueAsString(object), ContentType.APPLICATION_JSON);
+				// post.addHeader("content-type", "application/");
+				post.setEntity(params);
 
-			var response = client.execute(put);
-			JsonNode node = mapper.readTree(response.getEntity().getContent());
-			System.out.println(node);
+				return client.execute(post);
 
-			return response;
+			} else if (requestType.equals("PUT")) {
+				put = new HttpPut(uri);
+				StringEntity params = new StringEntity(mapper.writeValueAsString(object), ContentType.APPLICATION_JSON);
+				// put.addHeader("content-type", "application/x-www-form-urlencoded");
+				put.setEntity(params);
 
-		}else if (requestType.equals("GET")) {
-			get = new HttpGet(uri);
-			
-			return client.execute(get);
-			
-			
+				var response = client.execute(put);
+				JsonNode node = mapper.readTree(response.getEntity().getContent());
+				System.out.println(node);
+
+				return response;
+
+			} else if (requestType.equals("GET")) {
+				get = new HttpGet(uri);
+
+				return client.execute(get);
+
 //			Planet[] array = mapper.readValue(response.getEntity().getContent(), Planet[].class);
 //			planetList.add(array[0]);
-		}
-		
+			}
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -311,7 +311,7 @@ public class Bodenstation {
 	}
 
 	public boolean checkPlanetName(String planetName) {
-		if(planetList.size() == 0){
+		if (planetList.size() == 0) {
 			return true;
 		}
 		for (Planet planet : planetList) {
@@ -335,6 +335,45 @@ public class Bodenstation {
 
 		return true;
 	}
+	
+	public Planet getPlanet(long id) {
+		for (Planet planet : planetList) {
+			if(planet.getId() == id) {
+				return planet;
+			}
+		}
+		return null;
+	}
+	
+	public RoboterManagement getSpecificRM(long id) {
+		for (RoboterManagement rm : robots) {
+			if (rm.getRobot().getId() == id) {
+				return rm;
+			}
+		}
+		return null;
+	}
+	
+	
+	public void autoMove() {
+		Robot robot = currentRobot;
+		boolean running = true;
+		Planet planet = getPlanet(robot.getPlanetId());
+		while(running){
+			// Roboter rotiert nach RECHTS, wenn er am Rand ist und in die Richtung des Randes schaut
+			if(robot.getX() == 0 && robot.getDirection() == DIRECTION.NORTH || 
+			   robot.getX() == planet.getWidth() && robot.getDirection() == DIRECTION.EAST ||
+			   robot.getY() == 0 && robot.getDirection() == DIRECTION.WEST ||
+			   robot.getY() == planet.getHeight() && robot.getDirection() == DIRECTION.SOUTH) 
+			{
+				getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
+			}
+			
+			if (noKollision()) {
+				getSpecificRM(robot.getId()).sendToRobot("mvscaned");
+			}
+		}
+	}
 
 	public void run() {
 		boolean running = true;
@@ -356,6 +395,9 @@ public class Bodenstation {
 						currentRobot.setPlanetId(currentPlanet.getId());
 						System.out.println("Roboter " + robotName + " wurder erstellt");
 					}
+					System.out.println("Soll der Roboter im JSON-Format kommunizieren J/N");
+					String json = scanner.nextLine();
+					if(json.equalsIgnoreCase("J"));
 				} else {
 					System.out.println("Error: Robotername bereits vergeben");
 					System.out.println("Roboter konnte nicht erstellt werden");
@@ -386,13 +428,13 @@ public class Bodenstation {
 
 			} else if (eingabe.equalsIgnoreCase("scan")) {
 				getRM().sendToRobot(eingabe);
-				
-			}else if(eingabe.equalsIgnoreCase("mvscan")) {
+
+			} else if (eingabe.equalsIgnoreCase("mvscan")) {
 				if (noKollision()) {
 					getRM().sendToRobot(eingabe);
 				}
-				
-			}else if(eingabe.contains("rotate:")) {
+
+			} else if (eingabe.contains("rotate:")) {
 				getRM().sendToRobot(eingabe);
 
 			} else if (eingabe.equalsIgnoreCase("exit")) {
@@ -408,8 +450,11 @@ public class Bodenstation {
 
 				for (Robot robot : robotList) {
 					if (robot.getName().equalsIgnoreCase(eingabe.split("\\|")[1])) {
-						currentRobot = robot;
-						robotFound = true;
+						if(robot.getStatus() != Status.CRASHED) {
+							currentRobot = robot;
+							robotFound = true;
+							System.out.println("Roboter: " +robot.getName()+ " wurde ausgewählt");
+						}
 					}
 					if (!robotFound) {
 						System.out.println("Roboter gibt es nicht");
@@ -435,10 +480,30 @@ public class Bodenstation {
 					System.out.println("Planet: " + eingabePlanet + " wurde gefunden");
 
 				}
-			} else {
+			} else if (eingabe.equalsIgnoreCase("getpos")) {
+				
+			}else if (eingabe.contains("charge:")) {
+				getRM().sendToRobot(eingabe);
+				
+			}else if(eingabe.equalsIgnoreCase("json")) {
+				if(useJson) {
+					useJson = false;
+					System.out.println("JSON aus, Text an");
+				}else {
+					useJson = true;
+					System.out.println("JSON an, Text aus");
+				}
+			}else if(eingabe.equalsIgnoreCase("currentRobot")) {
+				if(currentRobot != null) {
+					System.out.println("Aktuell ausgewählter Roboter: " + currentRobot.getName());
+				}else {
+					System.out.println("Aktuell kein Roboter ausgewählt");
+				}
+			}
+			else {
 				System.out.println("Command gibt es nicht");
 			}
 		}
 	}
-	
+
 }

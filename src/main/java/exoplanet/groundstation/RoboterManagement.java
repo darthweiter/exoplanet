@@ -6,6 +6,7 @@ import exoplanet.commands.CommandParser;
 import exoplanet.commands.error.CommandNotFoundException;
 import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.receive.AReceiveCommand;
+import exoplanet.commands.receive.ReceiveCommandCharged;
 import exoplanet.commands.receive.ReceiveCommandError;
 import exoplanet.commands.receive.ReceiveCommandInit;
 import exoplanet.commands.receive.ReceiveCommandLanded;
@@ -14,6 +15,7 @@ import exoplanet.commands.receive.ReceiveCommandMoved;
 import exoplanet.commands.receive.ReceiveCommandPosition;
 import exoplanet.commands.receive.ReceiveCommandRotated;
 import exoplanet.commands.receive.ReceiveCommandScanned;
+import exoplanet.commands.receive.ReceiveCommandStatus;
 import exoplanet.robot.Robot;
 import exoplanet.robot.Status;
 import java.io.BufferedReader;
@@ -50,10 +52,8 @@ public class RoboterManagement extends Thread {
     String messageFromRobot;
     try {
       while (true) {
-        System.out.println("warte auf Robot");
         messageFromRobot = in.readLine();
-        System.out.println("Nachricht Robot erhalten");
-        System.out.println(messageFromRobot);
+        System.out.println("Nachricht vom Robot: " + messageFromRobot);
 
         ACommandClass command = CommandParser.parse(messageFromRobot);
         execute(command);
@@ -79,15 +79,18 @@ public class RoboterManagement extends Thread {
 						new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), specificCommand.getMeasure().ground(),
 								specificCommand.getMeasure().temp()));
         updateRobot();
+        bs.ausgabe("Roboter ist erfolgreich gelandet");
 			}
 			case scaned -> {
 				ReceiveCommandScanned specificCommand = (ReceiveCommandScanned) command;
 				bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten",
 						new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), specificCommand.getMeasure().ground(),
 								specificCommand.getMeasure().temp()));
+				bs.ausgabe("erfolgreich gescannt");
 			}
 			case moved, rotated, crashed, pos -> {
 				updateRobot();
+				System.out.println("Roboter hat moved, rotated, getpos ausgeführt oder ist gecrashed");
 			}
 			case mvscaned -> {
 				ReceiveCommandMoveScaned specificCommand = (ReceiveCommandMoveScaned) command;
@@ -95,6 +98,7 @@ public class RoboterManagement extends Thread {
 						new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), specificCommand.getMeasure().ground(),
 								specificCommand.getMeasure().temp()));
 				updateRobot();
+				bs.ausgabe("Der Roboter hat sich bewegt und gescannt");
 			} case error -> {
 				ReceiveCommandError specificCommand = (ReceiveCommandError) command;
 				bs.ausgabe("Error vom Planeten: " + specificCommand.getErrorMsg());
@@ -103,19 +107,22 @@ public class RoboterManagement extends Thread {
 			case init -> {
         ReceiveCommandInit specificCommand = (ReceiveCommandInit) command;
         bs.isPlanetKnown(specificCommand);
+        bs.ausgabe("Roboter ist im Orbit");
       }
 
 			case charged -> {
         //TODO advancedLevel;
-//					sendToStation(command);
+		ReceiveCommandCharged specificCommand = (ReceiveCommandCharged) command;
+		updateRobot();
+		bs.ausgabe("Nachricht vom Aufladen: " +specificCommand.getStatus().message());
       }
       case status -> {
         //TODO advancedLevel;
-//					ReceiveCommandStatus specificCommand = (ReceiveCommandStatus)command;
-//					if(specificCommand.getAllStatusMessages().contains(Status.STUCK_IN_MUD.name())) {
-//						status = Status.STUCK_IN_MUD;
-//					}
-//					sendToStation(command);
+//		ReceiveCommandStatus specificCommand = (ReceiveCommandStatus) command;
+//		if(specificCommand.getAllStatusMessages().contains(Status.STUCK_IN_MUD.name())) {
+//			status = Status.STUCK_IN_MUD;
+//		}
+//		sendToStation(command);
       }
     }
   }

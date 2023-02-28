@@ -47,10 +47,8 @@ public class PlanetReceiver extends Thread {
 			//sendToStation(messagePlanet + "|" + robot.getPlanetId());
 
 			while (!(robot.getStatus() == Status.CRASHED)) {
-				System.out.println("warte auf planet");
 				messagePlanet = in.readLine();
-				System.out.println("nachricht erhalten");
-				System.out.println(messagePlanet);
+				System.out.println("Nachricht vom Planet: " + messagePlanet);
 				ACommandClass command;
 				if(useJson) {
 					command = CommandParser.parseJson(messagePlanet);

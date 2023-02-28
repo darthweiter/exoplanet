@@ -8,11 +8,13 @@ import exoplanet.commands.Command;
 import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.model.Position;
 import exoplanet.commands.receive.AReceiveCommand;
+import exoplanet.commands.receive.ReceiveCommandCharged;
 import exoplanet.commands.receive.ReceiveCommandMoveScaned;
 import exoplanet.commands.receive.ReceiveCommandMoved;
 import exoplanet.commands.receive.ReceiveCommandPosition;
 import exoplanet.commands.receive.ReceiveCommandRotated;
 import exoplanet.commands.send.ASendCommand;
+import exoplanet.commands.send.SendCommandCharge;
 import exoplanet.commands.send.SendCommandLand;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -95,8 +97,8 @@ public class Robot {
       }
       case charge -> {
         //TODO advancedLevel;
-//					SendCommandCharge specificCommand =(SendCommandCharge) command;
-//					sendToPlanet(command);
+		SendCommandCharge specificCommand =(SendCommandCharge) command;
+		sendToPlanet(command);
       }
     }
   }
@@ -133,7 +135,11 @@ public class Robot {
       }
       case charged -> {
         //TODO advancedLevel;
-//					sendToStation(command);
+    	ReceiveCommandCharged specificCommand = (ReceiveCommandCharged) command;
+    	setTemperatur(specificCommand.getStatus().temp());
+  		setEnergie(specificCommand.getStatus().energy());
+		sendToStation(command);
+		
       }
       case status -> {
         //TODO advancedLevel;
@@ -145,7 +151,7 @@ public class Robot {
       }
     }
   }
-
+  
   private void updatePosition(Position position) {
     x = position.x();
     y = position.y();
