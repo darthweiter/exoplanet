@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.receive.ReceiveCommandInit;
 import exoplanet.robot.Robot;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -148,8 +150,13 @@ public class Bodenstation {
 					planetTemp = new Planet(0, planet.getName(), command.getSize().width(),
 							command.getSize().height());
 					response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten", planetTemp);
+					var content = response.getEntity().getContent();
+					BufferedReader reader = new BufferedReader(new InputStreamReader(content));
+					String contentValue = reader.readLine();
+					JsonNode node = mapper.readTree(contentValue);
+					System.out.println(node);
 
-					planetTemp = mapper.readValue(response.getEntity().getContent(), Planet.class);
+					planetTemp = mapper.readValue(contentValue, Planet.class);
 					currentRobot.setPlanetId(planetTemp.getId());
 
 					for (int i = 0; i <= planetList.size() - 1; i++) {
@@ -304,6 +311,9 @@ public class Bodenstation {
 	}
 
 	public boolean checkPlanetName(String planetName) {
+		if(planetList.size() == 0){
+			return true;
+		}
 		for (Planet planet : planetList) {
 			if (planet.getName().equalsIgnoreCase(planetName)) {
 			}
