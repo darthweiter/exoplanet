@@ -1,12 +1,12 @@
 package exoplanet.commands.receive;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
 import exoplanet.commands.model.Position;
-import exoplanet.parsing.JsonPropertyValue;
+import exoplanet.commands.JsonPropertyValue;
 
-public class ReceiveCommandMoved extends ACommandClass {
-  public final static String CMD_NAME = "moved";
+public class ReceiveCommandMoved extends AReceiveCommand {
+  public final static String CMD_NAME = Command.moved.name();
 
   @JsonProperty(JsonPropertyValue.POSITION)
   private Position position;

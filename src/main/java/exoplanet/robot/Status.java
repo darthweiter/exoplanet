@@ -3,5 +3,6 @@ package exoplanet.robot;
 public enum Status {
 
 	WORKING,
-	CRASHED
+	CRASHED,
+	STUCK_IN_MUD
 }

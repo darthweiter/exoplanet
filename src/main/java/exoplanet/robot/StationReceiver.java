@@ -1,11 +1,15 @@
 package exoplanet.robot;
 
+import exoplanet.commands.ACommandClass;
+import exoplanet.commands.CommandParser;
+import exoplanet.commands.error.CommandNotFoundException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Set;
 
 public class StationReceiver extends Thread{
 
@@ -34,27 +38,12 @@ public class StationReceiver extends Thread{
 		while(!robot.getStatus().equals(Status.CRASHED)) {
 			try {
 				commandStation = in.readLine();
-				String[] split = commandStation.split("\\|");
-				if(split[0].contains("land:POSITION")) {
-					robot.sendToPlanet(commandStation);
-				}else if(split[0].contains("scan")) {
-					robot.scan();
-				}else if(split[0].contains("move")) {
-					robot.move();
-				}else if(split[0].contains("mvscan")) {
-					robot.move();
-					robot.scan();
-				}else if(split[0].contains("rotate")) {
-					robot.sendToPlanet(commandStation);
-				}else if(split[0].contains("exit")) {
-					robot.exit();
-				}else if(split[0].contains("orbit")){
-					robot.connectToPlanet("localhost", 8150);
-					robot.sendToPlanet(commandStation);
-				}
-				
+				ACommandClass command = CommandParser.parse(commandStation);
+				robot.execute(command);
 			} catch (IOException e) {
 				e.printStackTrace();
+			} catch (CommandNotFoundException e) {
+				throw new RuntimeException(e);
 			}
 		}
 	}

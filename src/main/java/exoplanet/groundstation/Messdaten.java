@@ -1,6 +1,7 @@
 package exoplanet.groundstation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import exoplanet.commands.model.GROUND;
 
 public class Messdaten {
 
@@ -11,14 +12,14 @@ public class Messdaten {
 	@JsonProperty("y")
 	private int y;
 	@JsonProperty("ground")
-	private String ground;
+	private GROUND ground;
 	@JsonProperty("temperature")
 	private double temperature;
 	
 	public Messdaten (){
 		
 	}
-	public Messdaten(long pid, int x, int y, String ground, double temperature) {
+	public Messdaten(long pid, int x, int y, GROUND ground, double temperature) {
 		this.pid = pid;
 		this.x = x;
 		this.y = y;
@@ -38,7 +39,7 @@ public class Messdaten {
 		return y;
 	}
 	
-	public String getGround() {
+	public GROUND getGround() {
 		return ground;
 	}
 	
