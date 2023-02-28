@@ -1,6 +1,7 @@
 package exoplanet.groundstation;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import exoplanet.commands.receive.ReceiveCommandInit;
 import exoplanet.robot.Robot;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -130,30 +131,27 @@ public class Bodenstation {
 		}
 	}
 	
-	public void isPlanetKnown(String[] split) {
-		int temp = Integer.parseInt(split[3]);
+	public void isPlanetKnown(ReceiveCommandInit command) {
 		for (Planet planet : planetList) {
-			if(planet.getId() == temp) {
-				
-			}else {
-				HttpResponse response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten", new Planet(0, "NewPlanet", Integer.parseInt(split[1]), Integer.parseInt(split[2])));
-				try {
-					Planet newPlanet = mapper.readValue(response.getEntity().getContent(), Planet.class);
-					planetList.add(newPlanet);
-				} catch (StreamReadException e) {
-					e.printStackTrace();
-				} catch (DatabindException e) {
-					e.printStackTrace();
-				} catch (UnsupportedOperationException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				
+			HttpResponse response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten",
+					new Planet(0, "NewPlanet", command.getSize().width(), command.getSize().height()));
+			try {
+				Planet newPlanet = mapper.readValue(response.getEntity().getContent(), Planet.class);
+				planetList.add(newPlanet);
+			} catch (StreamReadException e) {
+				e.printStackTrace();
+			} catch (DatabindException e) {
+				e.printStackTrace();
+			} catch (UnsupportedOperationException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			
+
 		}
+			
 	}
+
 
 	public void send() {
 		

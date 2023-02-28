@@ -7,6 +7,7 @@ import exoplanet.commands.error.CommandNotFoundException;
 import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.receive.AReceiveCommand;
 import exoplanet.commands.receive.ReceiveCommandError;
+import exoplanet.commands.receive.ReceiveCommandInit;
 import exoplanet.commands.receive.ReceiveCommandLanded;
 import exoplanet.commands.receive.ReceiveCommandMoveScaned;
 import exoplanet.commands.receive.ReceiveCommandMoved;
@@ -54,15 +55,9 @@ public class RoboterManagement extends Thread {
         messageFromRobot = in.readLine();
         System.out.println("Nachricht Robot erhalten");
         System.out.println(messageFromRobot);
-        String[] split = messageFromRobot.split("\\|");
 
         ACommandClass command = CommandParser.parse(messageFromRobot);
         execute(command);
-
-				//TODO was macht das bitte?
-//        if (split[0].contains("inti:SIZE")) {
-//          bs.isPlanetKnown(split);
-//        }
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -107,7 +102,8 @@ public class RoboterManagement extends Thread {
 			}
 
 			case init -> {
-        //TODO implementieren
+        ReceiveCommandInit specificCommand = (ReceiveCommandInit) command;
+        bs.isPlanetKnown(specificCommand);
       }
 
 			case charged -> {
