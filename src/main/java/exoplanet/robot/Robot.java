@@ -45,16 +45,14 @@ public class Robot {
 
   }
 
-  public Robot(String name, int planetId, String hostnameStation, int portStation,
+  public Robot(String name, long planetId, String hostnameStation, int portStation,
       boolean useJson) {
     this.name = name;
     status = Status.WORKING;
-    temperatur = 20;
+    temperatur = 0;
     energie = 100;
     this.planetId = planetId;
     this.useJson = useJson;
-    connectToStation(hostnameStation, portStation);
-
   }
 
   public void connectToStation(String hostnameStation, int portStation) {
@@ -121,6 +119,7 @@ public class Robot {
       case rotated -> {
         ReceiveCommandRotated specificCommand = (ReceiveCommandRotated) command;
         direction = specificCommand.getDirection();
+        updatePosition(new Position(x, y, direction));
         sendToStation(command);
       }
       case crashed -> {
@@ -221,25 +220,29 @@ public class Robot {
     this.direction = direction;
   }
 
-  public long getPlanetId() {
-    return planetId;
-  }
+	public long getPlanetId() {
+		return planetId;
+	}
+	
+	public void setPlanetId(long planetId) {
+		this.planetId = planetId;
+	}
 
-  public long getId() {
-    return id;
-  }
+	public long getId(){
+		return id;
+	}
 
-  public void setId(int id) {
-    this.id = id;
-  }
-
-  public double getEnergie() {
-    return energie;
-  }
-
-  public void setEnergie(double energie) {
-    this.energie = energie;
-  }
-
+	public void setId(long id){
+		this.id = id;
+	}
+	
+	public double getEnergie() {
+		return energie;
+	}
+	
+	public void setEnergie(double energie) {
+		this.energie = energie;
+	}
+	
 
 }

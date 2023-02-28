@@ -49,7 +49,6 @@ public class RoboterManagement extends Thread {
   public void run() {
     String messageFromRobot;
     try {
-      //TODO
       while (true) {
         System.out.println("warte auf Robot");
         messageFromRobot = in.readLine();

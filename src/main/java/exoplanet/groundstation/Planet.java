@@ -1,11 +1,13 @@
 package exoplanet.groundstation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Planet {
 
 	@JsonProperty("id")
-	private int id;
+	private long id;
 	@JsonProperty("name")
 	private String name;
 	@JsonProperty("width")
@@ -16,18 +18,18 @@ public class Planet {
 	public Planet() {
 		
 	}
-	public Planet(int id, String name, int width, int height) {
+	public Planet(long id, String name, int width, int height) {
 		this.id = id;
 		this.name = name;
 		this.width = width;
 		this.height = height;
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 

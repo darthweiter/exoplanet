@@ -51,5 +51,6 @@ public class StationReceiver extends Thread{
 	public void sendToStation(String MessageToStation) {
 		out.println(MessageToStation);
 	}
+	
 
 }
