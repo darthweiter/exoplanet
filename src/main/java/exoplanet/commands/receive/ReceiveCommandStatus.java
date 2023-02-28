@@ -1,13 +1,15 @@
 package exoplanet.commands.receive;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
 import exoplanet.commands.model.Status;
-import exoplanet.parsing.JsonPropertyValue;
+import exoplanet.commands.JsonPropertyValue;
+import java.util.Arrays;
+import java.util.List;
 
-public class ReceiveCommandStatus extends ACommandClass {
+public class ReceiveCommandStatus extends AReceiveCommand {
 
-  public final static String CMD_NAME = "status";
+  public final static String CMD_NAME = Command.status.name();
 
   @JsonProperty(JsonPropertyValue.STATUS)
   private Status status;
@@ -32,5 +34,9 @@ public class ReceiveCommandStatus extends ACommandClass {
   @Override
   public String toString() {
     return CMD_NAME+":"+status.temp()+"|"+status.energy()+"|"+status.message();
+  }
+
+  public List<String> getAllStatusMessages() {
+    return Arrays.asList(status.message().split("\\|"));
   }
 }

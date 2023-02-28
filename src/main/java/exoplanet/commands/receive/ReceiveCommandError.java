@@ -1,12 +1,12 @@
 package exoplanet.commands.receive;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import exoplanet.commands.ACommandClass;
-import exoplanet.parsing.JsonPropertyValue;
+import exoplanet.commands.Command;
+import exoplanet.commands.JsonPropertyValue;
 
-public class ReceiveCommandError extends ACommandClass {
+public class ReceiveCommandError extends AReceiveCommand {
 
-  public final static String CMD_NAME = "error";
+  public final static String CMD_NAME = Command.error.name();
   @JsonProperty(JsonPropertyValue.ERROR)
   private String errorMsg;
 

@@ -1,8 +1,8 @@
 package exoplanet.robot;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import exoplanet.commands.ACommandClass;
+import exoplanet.commands.CommandParser;
 import exoplanet.commands.error.CommandNotFoundException;
-import exoplanet.parsing.JSONCommandParser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -51,17 +51,13 @@ public class PlanetReceiver extends Thread {
 				messagePlanet = in.readLine();
 				System.out.println("nachricht erhalten");
 				System.out.println(messagePlanet);
+				ACommandClass command;
 				if(useJson) {
-					messagePlanet = JSONCommandParser.parseJson(messagePlanet);
+					command = CommandParser.parseJson(messagePlanet);
+				} else {
+					command = CommandParser.parse(messagePlanet);
 				}
-				if(messagePlanet.split("\\|")[0].equals("moved:POSITION")) {
-					robot.updatePosition(messagePlanet);
-				} else if(messagePlanet.split("\\|")[0].equals("mvscaned:MEASURE")) {
-					robot.updatePositionMVSCANED(messagePlanet);
-				}
-				System.out.println("send to Station");
-
-				sendToStation(messagePlanet);
+				robot.execute(command);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -69,22 +65,8 @@ public class PlanetReceiver extends Thread {
 			throw new RuntimeException(e);
 		}
 	}
-
-	private void sendToStation(String messageToStation) {
-		robot.sendToStation(messageToStation);
-	}
-
 	public void sendToPlanet(String messageToPlanet) {
-
-		 try {
-			 if (useJson) {
-				 out.println(JSONCommandParser.toJson(messageToPlanet));
-			 } else {
 				 out.println(messageToPlanet);
-			 }
-		 } catch (JsonProcessingException | CommandNotFoundException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 }

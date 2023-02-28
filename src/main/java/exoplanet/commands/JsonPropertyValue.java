@@ -1,4 +1,4 @@
-package exoplanet.parsing;
+package exoplanet.commands;
 
 public class JsonPropertyValue {
 

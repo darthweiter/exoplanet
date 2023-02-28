@@ -154,12 +154,7 @@ public class Bodenstation {
 			
 		}
 	}
-	
-	public void saveMeasure(Robot robot, String ground, String temperature) {
-		createRestRequest("POST", "http://localhost8080/api/v1/messdaten", new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), ground, Double.parseDouble(temperature)));
-	}
-	
-	
+
 	public void send() {
 		
 	}
@@ -239,11 +234,14 @@ public class Bodenstation {
 			StringEntity params = new StringEntity(mapper.writeValueAsString(object), ContentType.APPLICATION_JSON);
 			//put.addHeader("content-type", "application/x-www-form-urlencoded");
 			put.setEntity(params);
-			
-			return client.execute(put);
-			
-			
-			
+
+
+			var response = client.execute(put);
+			JsonNode node = mapper.readTree(response.getEntity().getContent());
+			System.out.println(node);
+
+			return response;
+
 		}else if (requestType.equals("GET")) {
 			get = new HttpGet(uri);
 			
@@ -319,7 +317,7 @@ public class Bodenstation {
 			}else if(eingabe.equalsIgnoreCase("mvscan")) {
 				getRM().sendToRobot(eingabe);
 				
-			}else if(eingabe.equalsIgnoreCase("rotate")) {
+			}else if(eingabe.contains("rotate:")) {
 				getRM().sendToRobot(eingabe);
 				
 			}else if(eingabe.equalsIgnoreCase("exit")) {

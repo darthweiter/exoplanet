@@ -1,10 +1,10 @@
 package exoplanet.commands.receive;
 
 
-import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
 
-public class ReceiveCommandCrash extends ACommandClass {
-  public final static String CMD_NAME = "crashed";
+public class ReceiveCommandCrash extends AReceiveCommand {
+  public final static String CMD_NAME = Command.crashed.name();
 
   public ReceiveCommandCrash() {
     super(CMD_NAME);

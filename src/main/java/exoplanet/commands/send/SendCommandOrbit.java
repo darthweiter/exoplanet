@@ -1,22 +1,27 @@
 package exoplanet.commands.send;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import exoplanet.commands.ACommandClass;
-import exoplanet.parsing.JsonPropertyValue;
+import exoplanet.commands.Command;
+import exoplanet.commands.JsonPropertyValue;
 
-public class SendCommandOrbit extends ACommandClass {
+public class SendCommandOrbit extends ASendCommand {
 
-  public final static String CMD_NAME = "orbit";
+  public final static String CMD_NAME = Command.orbit.name();
 
   @JsonProperty(JsonPropertyValue.NAME)
-  private final String name;
+  private final String robotName;
 
   public SendCommandOrbit(String roboterName) {
     super(CMD_NAME);
-    this.name = roboterName;
+    this.robotName = roboterName;
   }
 
-  public String getName() {
-    return name;
+  @Override
+  public String toString() {
+    return CMD_NAME + ":" + robotName;
+  }
+
+  public String getRobotName() {
+    return robotName;
   }
 }

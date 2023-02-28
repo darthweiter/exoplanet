@@ -1,13 +1,13 @@
 package exoplanet.commands.receive;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
 import exoplanet.commands.model.DIRECTION;
-import exoplanet.parsing.JsonPropertyValue;
+import exoplanet.commands.JsonPropertyValue;
 
-public class ReceiveCommandRotated extends ACommandClass {
+public class ReceiveCommandRotated extends AReceiveCommand {
 
-  public final static String CMD_NAME = "rotated";
+  public final static String CMD_NAME = Command.rotated.name();
 
   @JsonProperty(JsonPropertyValue.DIRECTION)
   private DIRECTION direction;

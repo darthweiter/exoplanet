@@ -2,192 +2,244 @@ package exoplanet.robot;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
+import exoplanet.commands.model.DIRECTION;
+import exoplanet.commands.model.Position;
+import exoplanet.commands.receive.AReceiveCommand;
+import exoplanet.commands.receive.ReceiveCommandMoveScaned;
+import exoplanet.commands.receive.ReceiveCommandMoved;
+import exoplanet.commands.receive.ReceiveCommandPosition;
+import exoplanet.commands.receive.ReceiveCommandRotated;
+import exoplanet.commands.send.ASendCommand;
+import exoplanet.commands.send.SendCommandLand;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Robot {
 
-	@JsonProperty("id")
-	private int id;
-	@JsonProperty("pid")
-	private long planetId;
-	@JsonProperty("x")
-	private int x;
-	@JsonProperty("y")
-	private int y;
-	@JsonProperty("name")
-	private String name;
-	@JsonProperty("temperature")
-	private double temperatur;
-	@JsonProperty("direction")
-	private Direction direction;
-	@JsonProperty("status")
-	private Status status;
-	private double energie;
+  @JsonProperty("id")
+  private long id;
+  @JsonProperty("pid")
+  private long planetId;
+  private int x;
+  private int y;
+  private String name;
+  @JsonProperty("temperature")
+  private double temperatur;
+  private DIRECTION direction;
+  private Status status;
+  @JsonProperty("energy")
+  private double energie;
+
+  private boolean heater;
+  private boolean cooler;
 
 
-	private PlanetReceiver planetReceiver;
-	private StationReceiver stationReceiver;
+  private PlanetReceiver planetReceiver;
+  private StationReceiver stationReceiver;
 
-	private boolean useJson;
+  private boolean useJson;
 
-	public Robot() {
-		
-	}
-	
-	public Robot(String name, int planetId, String hostnameStation, int portStation, boolean useJson) {
-		this.name = name;
-		status = Status.WORKING;
-		temperatur = 20;
-		energie = 100;
-		this.planetId = planetId;
-		this.useJson = useJson;
-		connectToStation(hostnameStation, portStation);
-		
-	}
+  public Robot() {
 
-	public void connectToStation(String hostnameStation, int portStation){
-		stationReceiver = new StationReceiver(this, hostnameStation, portStation);
-		stationReceiver.start();
-	}
-	
-	public void connectToPlanet(String hostnamePlanet, int portPlanet) {
-		planetReceiver = new PlanetReceiver(this, hostnamePlanet, portPlanet, useJson);
-		planetReceiver.start();
-		
-	}
+  }
 
-	public void move() {
-		planetReceiver.sendToPlanet("move");
-	}
+  public Robot(String name, int planetId, String hostnameStation, int portStation,
+      boolean useJson) {
+    this.name = name;
+    status = Status.WORKING;
+    temperatur = 20;
+    energie = 100;
+    this.planetId = planetId;
+    this.useJson = useJson;
+    connectToStation(hostnameStation, portStation);
 
-	public void scan() {
-		planetReceiver.sendToPlanet("scan");
-	}
-	
-	public void mvscan() {
-		planetReceiver.sendToPlanet("mvscan");
-	}
+  }
 
-	public void rotate(String rotation) {
-		if(rotation.equalsIgnoreCase("left") && direction == Direction.NORTH) {
-			setDirection(Direction.WEST);
-		} else if (rotation.equalsIgnoreCase("left")  && direction == Direction.EAST) {
-			setDirection(Direction.NORTH);
-		} else if (rotation.equalsIgnoreCase("left")  && direction == Direction.SOUTH) {
-			setDirection(Direction.SOUTH);
-		}else if (rotation.equalsIgnoreCase("left")  && direction == Direction.WEST) {
-			setDirection(Direction.EAST);
-		}else if (rotation.equalsIgnoreCase("right")  && direction == Direction.NORTH) {
-			setDirection(Direction.EAST);
-		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.EAST) {
-			setDirection(Direction.SOUTH);
-		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.SOUTH) {
-			setDirection(Direction.WEST);
-		}else if (rotation.equalsIgnoreCase("right") && direction == Direction.WEST) {
-			setDirection(Direction.NORTH);
-		}
-		planetReceiver.sendToPlanet("rotate:" + rotation);
-	}
-	
-	public void sendToStation(String message) {
-		stationReceiver.sendToStation(message);
-	}
-	
-	public void sendToPlanet(String message) {
-		planetReceiver.sendToPlanet(message);
-	}
+  public void connectToStation(String hostnameStation, int portStation) {
+    stationReceiver = new StationReceiver(this, hostnameStation, portStation);
+    stationReceiver.start();
+  }
 
-	public void land(int x, int y, Direction direction) {
-		this.x = x;
-		this.y = y;
-		this.direction = direction;
-		planetReceiver.sendToPlanet("land:POSITION|" + x + "|" + y + "|" + direction);
-	}
-	
-	public void updatePosition(String messagePlanet) {
-		String[] split = messagePlanet.split("\\|");
-		setX(Integer.parseInt(split[1]));
-		setY(Integer.parseInt(split[2]));
-	}
-	
-	public void updatePositionMVSCANED(String messagePlanet) {
-		String[] split = messagePlanet.split("\\|");
-		setX(Integer.parseInt(split[3]));
-		setY(Integer.parseInt(split[4]));
-	}
+  public void connectToPlanet(String hostnamePlanet, int portPlanet) {
+    planetReceiver = new PlanetReceiver(this, hostnamePlanet, portPlanet, useJson);
+    planetReceiver.start();
 
-	public void exit() {
-		planetReceiver.sendToPlanet("exit");
-		planetReceiver.interrupt();
-	}
+  }
 
-	public String getName() {
-		return name;
-	}
+  public void execute(ACommandClass command) {
+    if (command instanceof ASendCommand sendCommand) {
+      executeSendCommand(sendCommand);
+    } else if (command instanceof AReceiveCommand receiveCommand) {
+      executeReceivedCommand(receiveCommand);
+    }
+  }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+  private void executeSendCommand(ASendCommand command) {
+    switch (Command.valueOf(command.getCmd())) {
+      case orbit -> {
+        connectToPlanet("localhost", 8150);
+        sendToPlanet(command);
+      }
+      case land -> {
+        SendCommandLand specificCommand = (SendCommandLand) command;
+        updatePosition(specificCommand.getPosition());
+        sendToPlanet(command);
+      }
+      case scan, move, mvscan, rotate, getpos -> {
+        sendToPlanet(command);
+      }
+      case exit -> {
+        sendToPlanet(command);
+        status = Status.CRASHED;
+        planetReceiver.interrupt();
+      }
+      case charge -> {
+        //TODO advancedLevel;
+//					SendCommandCharge specificCommand =(SendCommandCharge) command;
+//					sendToPlanet(command);
+      }
+    }
+  }
 
-	public int getX() {
-		return x;
-	}
+  private void executeReceivedCommand(AReceiveCommand command) {
+    switch (Command.valueOf(command.getCmd())) {
+      case init, landed, scaned, error -> {
+        sendToStation(command);
+      }
+      case moved -> {
+        ReceiveCommandMoved specificCommand = (ReceiveCommandMoved) command;
+        updatePosition(specificCommand.getPosition());
+        sendToStation(command);
+      }
+      case mvscaned -> {
+        ReceiveCommandMoveScaned specificCommand = (ReceiveCommandMoveScaned) command;
+        updatePosition(specificCommand.getPosition());
+        sendToStation(command.toString());
+      }
+      case rotated -> {
+        ReceiveCommandRotated specificCommand = (ReceiveCommandRotated) command;
+        direction = specificCommand.getDirection();
+        sendToStation(command);
+      }
+      case crashed -> {
+        status = Status.CRASHED;
+        sendToStation(command);
+      }
+      case pos -> {
+        ReceiveCommandPosition specificCommand = (ReceiveCommandPosition) command;
+        updatePosition(specificCommand.getPosition());
+        sendToStation(command);
+      }
+      case charged -> {
+        //TODO advancedLevel;
+//					sendToStation(command);
+      }
+      case status -> {
+        //TODO advancedLevel;
+//					ReceiveCommandStatus specificCommand = (ReceiveCommandStatus)command;
+//					if(specificCommand.getAllStatusMessages().contains(Status.STUCK_IN_MUD.name())) {
+//						status = Status.STUCK_IN_MUD;
+//					}
+//					sendToStation(command);
+      }
+    }
+  }
 
-	public void setX(int x) {
-		this.x = x;
-	}
+  private void updatePosition(Position position) {
+    x = position.x();
+    y = position.y();
+    direction = position.direction();
+  }
 
-	public int getY() {
-		return y;
-	}
+  public void sendToStation(ACommandClass command) {
+    stationReceiver.sendToStation(command.toString());
+  }
 
-	public void setY(int y) {
-		this.y = y;
-	}
+  public void sendToStation(String message) {
+    stationReceiver.sendToStation(message);
+  }
 
-	public Status getStatus() {
-		return status;
-	}
+  public void sendToPlanet(ACommandClass command) {
+    if (useJson) {
+      try {
+        planetReceiver.sendToPlanet(command.toJson());
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      planetReceiver.sendToPlanet(command.toString());
+    }
+  }
 
-	public void setStatus(Status status) {
-		this.status = status;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public double getTemperatur() {
-		return temperatur;
-	}
+  public void setName(String name) {
+    this.name = name;
+  }
 
-	public void setTemperatur(double temperatur) {
-		this.temperatur = temperatur;
-	}
+  public int getX() {
+    return x;
+  }
 
-	public Direction getDirection() {
-		return direction;
-	}
+  public void setX(int x) {
+    this.x = x;
+  }
 
-	public void setDirection(Direction direction) {
-		this.direction = direction;
-	}
+  public int getY() {
+    return y;
+  }
 
-	public long getPlanetId() {
-		return planetId;
-	}
-	
-	public int getId(){
-		return id;
-	}
-	
-	public void setId(int id){
-		this.id = id;
-	}
-	
-	public double getEnergie() {
-		return energie;
-	}
-	
-	public void setEnergie(double energie) {
-		this.energie = energie;
-	}
-	
+  public void setY(int y) {
+    this.y = y;
+  }
+
+  public Status getStatus() {
+    return status;
+  }
+
+  public void setStatus(Status status) {
+    this.status = status;
+  }
+
+  public double getTemperatur() {
+    return temperatur;
+  }
+
+  public void setTemperatur(double temperatur) {
+    this.temperatur = temperatur;
+  }
+
+  public DIRECTION getDirection() {
+    return direction;
+  }
+
+  public void setDirection(DIRECTION direction) {
+    this.direction = direction;
+  }
+
+  public long getPlanetId() {
+    return planetId;
+  }
+
+  public long getId() {
+    return id;
+  }
+
+  public void setId(int id) {
+    this.id = id;
+  }
+
+  public double getEnergie() {
+    return energie;
+  }
+
+  public void setEnergie(double energie) {
+    this.energie = energie;
+  }
+
 
 }
