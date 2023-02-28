@@ -43,7 +43,7 @@ public class StationReceiver extends Thread{
 			} catch (IOException e) {
 				e.printStackTrace();
 			} catch (CommandNotFoundException e) {
-				throw new RuntimeException(e);
+				//TODO ausgabe
 			}
 		}
 	}

@@ -61,7 +61,7 @@ public class RoboterManagement extends Thread {
     } catch (IOException e) {
       e.printStackTrace();
     } catch (CommandNotFoundException e) {
-      throw new RuntimeException(e);
+      bs.ausgabe("Command not found");
     }
   }
 

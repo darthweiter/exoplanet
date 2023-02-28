@@ -146,7 +146,7 @@ public class Robot {
     }
   }
 
-  private void updatePosition(Position position) {
+  public void updatePosition(Position position) {
     x = position.x();
     y = position.y();
     direction = position.direction();

@@ -1,8 +1,13 @@
 package exoplanet.groundstation;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
+import exoplanet.commands.CommandParser;
+import exoplanet.commands.error.CommandNotFoundException;
 import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.receive.ReceiveCommandInit;
+import exoplanet.commands.send.SendCommandLand;
 import exoplanet.robot.Robot;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -361,43 +366,6 @@ public class Bodenstation {
 					System.out.println("Roboter konnte nicht erstellt werden");
 				}
 
-			} else if (eingabe.contains("land:POSITION|")) {
-				String[] splitEingabe = eingabe.split("\\|");
-				System.out.println("Roboter bei landung: " + currentRobot);
-				currentRobot.setX(Integer.parseInt(splitEingabe[1]));
-				currentRobot.setY(Integer.parseInt(splitEingabe[2]));
-				currentRobot.setDirection(DIRECTION.valueOf(splitEingabe[3]));
-				getRM().sendToRobot(eingabe);
-
-			} else if (eingabe.contains("orbit:")) {
-				System.out.println("orbitCommand");
-				if (getRM() != null) {
-					System.out.println("sende Command");
-					getRM().sendToRobot(eingabe);
-				} else {
-					System.out.println("RM ist null");
-
-				}
-
-			} else if (eingabe.equalsIgnoreCase("move")) {
-				if (noKollision()) {
-					getRM().sendToRobot(eingabe);
-				}
-
-			} else if (eingabe.equalsIgnoreCase("scan")) {
-				getRM().sendToRobot(eingabe);
-				
-			}else if(eingabe.equalsIgnoreCase("mvscan")) {
-				if (noKollision()) {
-					getRM().sendToRobot(eingabe);
-				}
-				
-			}else if(eingabe.contains("rotate:")) {
-				getRM().sendToRobot(eingabe);
-
-			} else if (eingabe.equalsIgnoreCase("exit")) {
-				getRM().sendToRobot(eingabe);
-
 			} else if (eingabe.equalsIgnoreCase("showRobots")) {
 				for (Robot robot : robotList) {
 					System.out.println(robot.getName());
@@ -436,9 +404,50 @@ public class Bodenstation {
 
 				}
 			} else {
-				System.out.println("Command gibt es nicht");
+				try {
+					execute(CommandParser.parse(eingabe));
+				} catch (CommandNotFoundException e) {
+					ausgabe("Command gibt es nicht");
+					System.out.println("Command gibt es nicht");
+				}
 			}
 		}
 	}
-	
+	private void execute(ACommandClass command) {
+		switch (Command.valueOf(command.getCmd())) {
+
+			case orbit -> {
+				System.out.println("orbitCommand");
+				if (getRM() != null) {
+					System.out.println("sende Command");
+					getRM().sendToRobot(command.toString());
+				} else {
+					System.out.println("RM ist null");
+				}
+			}
+			case init, landed, scaned, moved, mvscaned, rotated, crashed, status, charged, pos, error -> {
+			}
+			case land -> {
+				SendCommandLand specificCommand = (SendCommandLand) command;
+				System.out.println("Roboter bei landung: " + currentRobot);
+				currentRobot.updatePosition(specificCommand.getPosition());
+				getRM().sendToRobot(specificCommand.toString());
+			}
+			case scan, rotate, exit -> {
+				getRM().sendToRobot(command.toString());
+			}
+			case move, mvscan -> {
+				if (noKollision()) {
+					getRM().sendToRobot(command.toString());
+				}
+			}
+			case getpos -> {
+			}
+			case charge -> {
+			}
+		}
+	}
+
+
+
 }
