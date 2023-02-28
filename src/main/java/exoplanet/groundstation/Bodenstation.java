@@ -1,6 +1,7 @@
 package exoplanet.groundstation;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import exoplanet.commands.receive.ReceiveCommandInit;
 import exoplanet.robot.Robot;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -130,36 +131,28 @@ public class Bodenstation {
 		}
 	}
 	
-	public void isPlanetKnown(String[] split) {
-		int temp = Integer.parseInt(split[3]);
+	public void isPlanetKnown(ReceiveCommandInit command) {
 		for (Planet planet : planetList) {
-			if(planet.getId() == temp) {
-				
-			}else {
-				HttpResponse response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten", new Planet(0, "NewPlanet", Integer.parseInt(split[1]), Integer.parseInt(split[2])));
-				try {
-					Planet newPlanet = mapper.readValue(response.getEntity().getContent(), Planet.class);
-					planetList.add(newPlanet);
-				} catch (StreamReadException e) {
-					e.printStackTrace();
-				} catch (DatabindException e) {
-					e.printStackTrace();
-				} catch (UnsupportedOperationException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				
+			HttpResponse response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten",
+					new Planet(0, "NewPlanet", command.getSize().width(), command.getSize().height()));
+			try {
+				Planet newPlanet = mapper.readValue(response.getEntity().getContent(), Planet.class);
+				planetList.add(newPlanet);
+			} catch (StreamReadException e) {
+				e.printStackTrace();
+			} catch (DatabindException e) {
+				e.printStackTrace();
+			} catch (UnsupportedOperationException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			
+
 		}
+			
 	}
-	
-	public void saveMeasure(Robot robot, String ground, String temperature) {
-		createRestRequest("POST", "http://localhost8080/api/v1/messdaten", new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), ground, Double.parseDouble(temperature)));
-	}
-	
-	
+
+
 	public void send() {
 		
 	}
@@ -239,11 +232,14 @@ public class Bodenstation {
 			StringEntity params = new StringEntity(mapper.writeValueAsString(object), ContentType.APPLICATION_JSON);
 			//put.addHeader("content-type", "application/x-www-form-urlencoded");
 			put.setEntity(params);
-			
-			return client.execute(put);
-			
-			
-			
+
+
+			var response = client.execute(put);
+			JsonNode node = mapper.readTree(response.getEntity().getContent());
+			System.out.println(node);
+
+			return response;
+
 		}else if (requestType.equals("GET")) {
 			get = new HttpGet(uri);
 			
@@ -319,7 +315,7 @@ public class Bodenstation {
 			}else if(eingabe.equalsIgnoreCase("mvscan")) {
 				getRM().sendToRobot(eingabe);
 				
-			}else if(eingabe.equalsIgnoreCase("rotate")) {
+			}else if(eingabe.contains("rotate:")) {
 				getRM().sendToRobot(eingabe);
 				
 			}else if(eingabe.equalsIgnoreCase("exit")) {

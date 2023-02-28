@@ -1,13 +1,13 @@
 package exoplanet.commands.send;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
 import exoplanet.commands.model.Rotation;
-import exoplanet.parsing.JsonPropertyValue;
+import exoplanet.commands.JsonPropertyValue;
 
-public class SendCommandRotate extends ACommandClass {
+public class SendCommandRotate extends ASendCommand {
 
-  public final static String CMD_NAME = "rotate";
+  public final static String CMD_NAME = Command.rotate.name();
   @JsonProperty(JsonPropertyValue.ROTATION)
   private final Rotation rotation;
 
@@ -18,5 +18,10 @@ public class SendCommandRotate extends ACommandClass {
 
   public Rotation getRotation() {
     return rotation;
+  }
+
+  @Override
+  public String toString() {
+    return CMD_NAME + ":" + rotation;
   }
 }

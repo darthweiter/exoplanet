@@ -1,6 +1,19 @@
 package exoplanet.groundstation;
 
-import exoplanet.robot.Direction;
+import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
+import exoplanet.commands.CommandParser;
+import exoplanet.commands.error.CommandNotFoundException;
+import exoplanet.commands.model.DIRECTION;
+import exoplanet.commands.receive.AReceiveCommand;
+import exoplanet.commands.receive.ReceiveCommandError;
+import exoplanet.commands.receive.ReceiveCommandInit;
+import exoplanet.commands.receive.ReceiveCommandLanded;
+import exoplanet.commands.receive.ReceiveCommandMoveScaned;
+import exoplanet.commands.receive.ReceiveCommandMoved;
+import exoplanet.commands.receive.ReceiveCommandPosition;
+import exoplanet.commands.receive.ReceiveCommandRotated;
+import exoplanet.commands.receive.ReceiveCommandScanned;
 import exoplanet.robot.Robot;
 import exoplanet.robot.Status;
 import java.io.BufferedReader;
@@ -8,115 +21,146 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
 
 
 public class RoboterManagement extends Thread {
 
-	private Bodenstation bs;
-	private Socket robotSocket;
-	private BufferedReader in;
-	private PrintWriter out;
-	private Robot robot;
-	
-	public RoboterManagement(Bodenstation bs, Socket socketRoboter, Robot robot){
-		this.bs = bs;
-		this.robotSocket = socketRoboter;
-		this.robot = robot;
-		try {
-			in = new BufferedReader(new InputStreamReader(robotSocket.getInputStream()));
-			out = new PrintWriter(robotSocket.getOutputStream(), true);
-			start();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-	}
-	
-	@Override
-	public void run() {
-		String messageFromRobot;
-		try {
-			//TODO
-			while(true) {
-				System.out.println("warte auf Robot");
-				messageFromRobot = in.readLine();
-				System.out.println("Nachricht Robot erhalten");
-				System.out.println(messageFromRobot);
-				String[] split = messageFromRobot.split("\\|");
-				if(split[0].contains("inti:SIZE")) {
-					bs.isPlanetKnown(split);
-					
-				}else if(split[0].contains("landed:MEASURE")) {
-//					bs.saveMeasure(robot, split[1], split[2]);
-					bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten", new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), split[1], Double.parseDouble(split[2])));
-					
-				}else if(split[0].contains("scaned:MEASURE")) {
-					bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten", new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), split[1], Double.parseDouble(split[2])));
-					
-				}else if(split[0].contains("moved:POSITION")) {
-					robot.setX(Integer.parseInt(split[1]));
-					robot.setY(Integer.parseInt(split[2]));
-					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/" + robot.getId(), robot);
-					
-				}else if(split[0].contains("mvscaned")) {
-					
-				}else if(split[0].contains("rotated")){
-					robot.rotate(split[0].split(":")[1]);
-					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/" + robot.getId(), robot);
-					
-				}else if(split[0].contains("crashed")) {
-					robot.setStatus(Status.CRASHED);
-					bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/" + robot.getId(), robot);
-					
-				}else if(split[0].contains("error")) {
-					bs.ausgabe("Error vom Planeten: " + split[0].split(":")[1]);
-					
-				}
+  private Bodenstation bs;
+  private Socket robotSocket;
+  private BufferedReader in;
+  private PrintWriter out;
+  private Robot robot;
+
+  public RoboterManagement(Bodenstation bs, Socket socketRoboter, Robot robot) {
+    this.bs = bs;
+    this.robotSocket = socketRoboter;
+    this.robot = robot;
+    try {
+      in = new BufferedReader(new InputStreamReader(robotSocket.getInputStream()));
+      out = new PrintWriter(robotSocket.getOutputStream(), true);
+      start();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+  }
+
+  @Override
+  public void run() {
+    String messageFromRobot;
+    try {
+      //TODO
+      while (true) {
+        System.out.println("warte auf Robot");
+        messageFromRobot = in.readLine();
+        System.out.println("Nachricht Robot erhalten");
+        System.out.println(messageFromRobot);
+
+        ACommandClass command = CommandParser.parse(messageFromRobot);
+        execute(command);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (CommandNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void execute(ACommandClass command) {
+    if (command instanceof AReceiveCommand receiveCommand) {
+      executeReceivedCommand(receiveCommand);
+    }
+  }
+
+  private void executeReceivedCommand(AReceiveCommand command) {
+    switch (Command.valueOf(command.getCmd())) {
+			case landed -> {
+				ReceiveCommandLanded specificCommand = (ReceiveCommandLanded) command;
+				bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten",
+						new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), specificCommand.getMeasure().ground(),
+								specificCommand.getMeasure().temp()));
+        updateRobot();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			case scaned -> {
+				ReceiveCommandScanned specificCommand = (ReceiveCommandScanned) command;
+				bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten",
+						new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), specificCommand.getMeasure().ground(),
+								specificCommand.getMeasure().temp()));
+			}
+			case moved, rotated, crashed, pos -> {
+				updateRobot();
+			}
+			case mvscaned -> {
+				ReceiveCommandMoveScaned specificCommand = (ReceiveCommandMoveScaned) command;
+				bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten",
+						new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), specificCommand.getMeasure().ground(),
+								specificCommand.getMeasure().temp()));
+				updateRobot();
+			} case error -> {
+				ReceiveCommandError specificCommand = (ReceiveCommandError) command;
+				bs.ausgabe("Error vom Planeten: " + specificCommand.getErrorMsg());
+			}
+
+			case init -> {
+        ReceiveCommandInit specificCommand = (ReceiveCommandInit) command;
+        bs.isPlanetKnown(specificCommand);
+      }
+
+			case charged -> {
+        //TODO advancedLevel;
+//					sendToStation(command);
+      }
+      case status -> {
+        //TODO advancedLevel;
+//					ReceiveCommandStatus specificCommand = (ReceiveCommandStatus)command;
+//					if(specificCommand.getAllStatusMessages().contains(Status.STUCK_IN_MUD.name())) {
+//						status = Status.STUCK_IN_MUD;
+//					}
+//					sendToStation(command);
+      }
+    }
+  }
+
+	private void updateRobot() {
+		bs.createRestRequest("PUT", "http://localhost:12345/api/v1/roboter/" + robot.getId(),
+				robot);
 	}
-	
-	public int getNewX() {
-	if(robot.getDirection() == Direction.EAST) {
-		return robot.getX()+1;
-	}else if(robot.getDirection() == Direction.WEST) {
-		return robot.getX()-1;		
-	}
-	return robot.getX();
-		
-	}
-	
-	public int getNewY() {
-		if(robot.getDirection() == Direction.NORTH) {
-			return robot.getY()-1;
-		}else if(robot.getDirection() == Direction.SOUTH) {
-			return robot.getY()+1;
-		}
-		return robot.getY();
-	}
-		
-	
-	public void sendToRobot(String message) {
-		out.println(message);
-	}
-	
-	public void close() {
-		try {
-			robotSocket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public Robot getRobot() {
-		return robot;
-	}
-		
-	
+
+  public int getNewX() {
+    if (robot.getDirection() == DIRECTION.EAST) {
+      return robot.getX() + 1;
+    } else if (robot.getDirection() == DIRECTION.WEST) {
+      return robot.getX() - 1;
+    }
+    return robot.getX();
+
+  }
+
+  public int getNewY() {
+    if (robot.getDirection() == DIRECTION.NORTH) {
+      return robot.getY() - 1;
+    } else if (robot.getDirection() == DIRECTION.SOUTH) {
+      return robot.getY() + 1;
+    }
+    return robot.getY();
+  }
+
+
+  public void sendToRobot(String message) {
+    out.println(message);
+  }
+
+  public void close() {
+    try {
+      robotSocket.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public Robot getRobot() {
+    return robot;
+  }
+
+
 }

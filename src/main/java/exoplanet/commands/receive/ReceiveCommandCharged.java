@@ -1,13 +1,13 @@
 package exoplanet.commands.receive;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import exoplanet.commands.ACommandClass;
+import exoplanet.commands.Command;
 import exoplanet.commands.model.Status;
-import exoplanet.parsing.JsonPropertyValue;
+import exoplanet.commands.JsonPropertyValue;
 
-public class ReceiveCommandCharged extends ACommandClass {
+public class ReceiveCommandCharged extends AReceiveCommand {
 
-  public final static String CMD_NAME = "charged";
+  public final static String CMD_NAME = Command.charged.name();
 
   @JsonProperty(JsonPropertyValue.STATUS)
   private Status status;
