@@ -119,6 +119,7 @@ public class Robot {
       case rotated -> {
         ReceiveCommandRotated specificCommand = (ReceiveCommandRotated) command;
         direction = specificCommand.getDirection();
+        updatePosition(new Position(x, y, direction));
         sendToStation(command);
       }
       case crashed -> {

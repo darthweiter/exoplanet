@@ -1,6 +1,7 @@
 package exoplanet.groundstation;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.receive.ReceiveCommandInit;
 import exoplanet.robot.Robot;
 import java.io.IOException;
@@ -355,7 +356,7 @@ public class Bodenstation {
 				System.out.println("Roboter bei landung: " + currentRobot);
 				currentRobot.setX(Integer.parseInt(splitEingabe[1]));
 				currentRobot.setY(Integer.parseInt(splitEingabe[2]));
-				currentRobot.setDirection(Direction.valueOf(splitEingabe[3]));
+				currentRobot.setDirection(DIRECTION.valueOf(splitEingabe[3]));
 				getRM().sendToRobot(eingabe);
 
 			} else if (eingabe.contains("orbit:")) {
