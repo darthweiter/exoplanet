@@ -94,6 +94,7 @@ public class RoboterManagement extends Thread {
 			}
 			case mvscaned -> {
 				ReceiveCommandMoveScaned specificCommand = (ReceiveCommandMoveScaned) command;
+        robot.setMeldungToStation(true);
 				bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten",
 						new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), specificCommand.getMeasure().ground(),
 								specificCommand.getMeasure().temp()));

@@ -43,6 +43,12 @@ public class Robot {
 
   private boolean useJson;
 
+
+
+  private boolean meldungToStation;
+
+  private boolean landed;
+
   public Robot() {
 
   }
@@ -87,7 +93,11 @@ public class Robot {
         updatePosition(specificCommand.getPosition());
         sendToPlanet(command);
       }
-      case scan, move, mvscan, rotate, getpos -> {
+      case mvscan -> {
+        meldungToStation = false;
+        sendToPlanet(command);
+      }
+      case scan, move, rotate, getpos -> {
         sendToPlanet(command);
       }
       case exit -> {
@@ -105,7 +115,12 @@ public class Robot {
 
   private void executeReceivedCommand(AReceiveCommand command) {
     switch (Command.valueOf(command.getCmd())) {
-      case init, landed, scaned, error -> {
+      case init, scaned, error -> {
+
+        sendToStation(command);
+      }
+      case landed -> {
+        landed = true;
         sendToStation(command);
       }
       case moved -> {
@@ -249,6 +264,20 @@ public class Robot {
 	public void setEnergie(double energie) {
 		this.energie = energie;
 	}
-	
 
+  public boolean isMeldungToStation() {
+    return meldungToStation;
+  }
+
+  public void setMeldungToStation(boolean meldungToStation) {
+    this.meldungToStation = meldungToStation;
+  }
+
+  public boolean isLanded() {
+    return landed;
+  }
+
+  public void setLanded(boolean landed) {
+    this.landed = landed;
+  }
 }
