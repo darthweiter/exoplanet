@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -298,9 +299,6 @@ public class Bodenstation {
 				get = new HttpGet(uri);
 
 				return client.execute(get);
-
-//			Planet[] array = mapper.readValue(response.getEntity().getContent(), Planet[].class);
-//			planetList.add(array[0]);
 			}
 
 		} catch (IOException e) {
@@ -325,9 +323,10 @@ public class Bodenstation {
 
 	public boolean noKollision() {
 		long planetId = currentRobot.getPlanetId();
+		Robot movingRobot = currentRobot;
 		for (Robot robot : robotList) {
 			if (robot.getPlanetId() == planetId) {
-				if (robot.getX() == getRM().getNewX() && robot.getY() == getRM().getNewY()) {
+				if (robot.getX() == getSpecificRM(movingRobot.getId()).getNewX() && robot.getY() == getSpecificRM(movingRobot.getId()).getNewY()) {
 					return false;
 				}
 			}
@@ -355,6 +354,101 @@ public class Bodenstation {
 	}
 	
 	
+	// Roboter bewegt sich nach lniks oben
+	// Dann von links nach ganz rechts
+	// Dann in die nächste Zeile und dann von rechts nach links bis alle Zeilen
+	public void autoMove2() throws InterruptedException {
+		Robot robot = currentRobot;
+		boolean planetExplored = false;
+		Planet planet = getPlanet(robot.getPlanetId());
+		
+		//Roboter dreht sich solange bis er nach Westen schaut
+		while(robot.getDirection() != DIRECTION.WEST && robot.getStatus() != Status.CRASHED) {
+			getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
+			TimeUnit.SECONDS.sleep(5);
+		}
+		
+		//Roboter läuft bis an den Rand
+		while(robot.getX() != 0 && robot.getStatus() != Status.CRASHED) {
+			if(noKollision()) {
+				getSpecificRM(robot.getId()).sendToRobot("mvscan");
+			}
+			TimeUnit.SECONDS.sleep(5);
+		}
+		
+		//Roboter läuft bis in die linke obere Ecke
+		while(robot.getDirection() != DIRECTION.NORTH && robot.getStatus() != Status.CRASHED) {
+			getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
+			TimeUnit.SECONDS.sleep(5);
+		}
+		
+		//Roboter läuft bis in die linke obere Ecke
+		while(robot.getY() != 0 && robot.getStatus() != Status.CRASHED) {
+			if(noKollision()) {
+				getSpecificRM(robot.getId()).sendToRobot("mvscan");
+			}
+			TimeUnit.SECONDS.sleep(5);
+		}
+		
+		//Roboter dreht sich solange bis er nach Osten schaut
+		while(robot.getDirection() != DIRECTION.EAST && robot.getStatus() != Status.CRASHED) {
+			getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
+			TimeUnit.SECONDS.sleep(5);
+		}
+		
+		while(robot.getStatus() != Status.CRASHED && !endOfPlanet(robot, planet)) {
+			// Laufe ganz nach Rechts
+			while(robot.getX() != planet.getWidth()-1 && !endOfPlanet(robot, planet)) {
+				if(noKollision()) {
+					getSpecificRM(robot.getId()).sendToRobot("mvscan");
+				}
+				TimeUnit.SECONDS.sleep(5);
+			}
+			//drehen und in die nächste Zeile
+			if(!endOfPlanet(robot, planet)) {
+			getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
+			TimeUnit.SECONDS.sleep(5);
+			if(noKollision()) {
+				getSpecificRM(robot.getId()).sendToRobot("mvscan");
+			}
+			TimeUnit.SECONDS.sleep(5);
+			getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
+			TimeUnit.SECONDS.sleep(5);
+			}
+			
+			//Laufe nach ganz links
+			while(robot.getY() != 0 && !endOfPlanet(robot, planet)) {
+				if(noKollision()) {
+					getSpecificRM(robot.getId()).sendToRobot("mvscan");
+				}
+				TimeUnit.SECONDS.sleep(5);
+			}
+			//drehen und in die nächste Zeile
+			if(!endOfPlanet(robot, planet)) {
+			getSpecificRM(robot.getId()).sendToRobot("rotate:LEFT");
+			TimeUnit.SECONDS.sleep(5);
+			if(noKollision()) {
+				getSpecificRM(robot.getId()).sendToRobot("mvscan");
+			}
+			TimeUnit.SECONDS.sleep(5);
+			getSpecificRM(robot.getId()).sendToRobot("rotate:LEFT");
+			TimeUnit.SECONDS.sleep(5);
+			}
+			
+			//Von Vorne beginnen: von Links nach Rechts laufen
+		}
+	}
+	
+	public boolean endOfPlanet(Robot robot, Planet planet) {
+		//Erstes Statement prüft ob Roboter rechts unten ist, dass andere links unten
+		if((robot.getX() == planet.getWidth() && robot.getY() == planet.getHeight()) || (robot.getX() == 0 && robot.getY() == planet.getHeight())) {
+			return true;
+		}
+		
+	return false;
+	}
+	
+	//
 	public void autoMove() {
 		Robot robot = currentRobot;
 		boolean running = true;
@@ -395,9 +489,6 @@ public class Bodenstation {
 						currentRobot.setPlanetId(currentPlanet.getId());
 						System.out.println("Roboter " + robotName + " wurder erstellt");
 					}
-					System.out.println("Soll der Roboter im JSON-Format kommunizieren J/N");
-					String json = scanner.nextLine();
-					if(json.equalsIgnoreCase("J"));
 				} else {
 					System.out.println("Error: Robotername bereits vergeben");
 					System.out.println("Roboter konnte nicht erstellt werden");
@@ -414,7 +505,6 @@ public class Bodenstation {
 			} else if (eingabe.contains("orbit:")) {
 				System.out.println("orbitCommand");
 				if (getRM() != null) {
-					System.out.println("sende Command");
 					getRM().sendToRobot(eingabe);
 				} else {
 					System.out.println("RM ist null");
@@ -456,9 +546,9 @@ public class Bodenstation {
 							System.out.println("Roboter: " +robot.getName()+ " wurde ausgewählt");
 						}
 					}
-					if (!robotFound) {
-						System.out.println("Roboter gibt es nicht");
-					}
+				}
+				if (!robotFound) {
+					System.out.println("Roboter gibt es nicht");
 				}
 
 			} else if (eingabe.equalsIgnoreCase("showPlanets")) {
@@ -498,6 +588,13 @@ public class Bodenstation {
 					System.out.println("Aktuell ausgewählter Roboter: " + currentRobot.getName());
 				}else {
 					System.out.println("Aktuell kein Roboter ausgewählt");
+				}
+			}else if(eingabe.equalsIgnoreCase("explore")) {
+				System.out.println("Roboter erkundet automatisch");
+				try {
+					autoMove2();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
 			else {
