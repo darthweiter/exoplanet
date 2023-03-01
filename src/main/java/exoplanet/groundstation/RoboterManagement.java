@@ -79,6 +79,7 @@ public class RoboterManagement extends Thread {
 						new Messdaten(robot.getPlanetId(), robot.getX(), robot.getY(), specificCommand.getMeasure().ground(),
 								specificCommand.getMeasure().temp()));
         updateRobot();
+        robot.setMeldungToStation(true);
         bs.ausgabe("Roboter ist erfolgreich gelandet");
 			}
 			case scaned -> {
@@ -88,17 +89,21 @@ public class RoboterManagement extends Thread {
 								specificCommand.getMeasure().temp()));
 				bs.ausgabe("erfolgreich gescannt");
 			}
-			case moved, rotated, crashed, pos -> {
+			case rotated, crashed, pos -> {
 				updateRobot();
-				System.out.println("Roboter hat moved, rotated, getpos ausgeführt oder ist gecrashed");
-			}
+				System.out.println("Roboter hat rotated, getpos ausgeführt oder ist gecrashed");
+      }case moved -> {
+        updateRobot();
+        robot.setMeldungToStation(true);
+        System.out.println("Roboter has moved.");
+      }
 			case mvscaned -> {
 				ReceiveCommandMoveScaned specificCommand = (ReceiveCommandMoveScaned) command;
-        robot.setMeldungToStation(true);
 				bs.createRestRequest("POST", "http://localhost:12345/api/v1/messdaten",
 						new Messdaten(robot.getPlanetId(), getNewX(), getNewY(), specificCommand.getMeasure().ground(),
 								specificCommand.getMeasure().temp()));
 				updateRobot();
+        robot.setMeldungToStation(true);
 				bs.ausgabe("Der Roboter hat sich bewegt und gescannt");
 			} case error -> {
 				ReceiveCommandError specificCommand = (ReceiveCommandError) command;

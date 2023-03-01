@@ -93,11 +93,11 @@ public class Robot {
         updatePosition(specificCommand.getPosition());
         sendToPlanet(command);
       }
-      case mvscan -> {
+      case mvscan, move-> {
         meldungToStation = false;
         sendToPlanet(command);
       }
-      case scan, move, rotate, getpos -> {
+      case scan, rotate, getpos -> {
         sendToPlanet(command);
       }
       case exit -> {

@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class Bodenstation {
 
 	private List<RoboterManagement> robots = null;
-	private ArrayList<Robot> robotList = new ArrayList<>();
+	private List<Robot> robotList = null;
 	private ArrayList<Planet> planetList = new ArrayList<>();
 	private Thread requestListener;
 	private Scanner scanner;
@@ -88,6 +88,7 @@ public class Bodenstation {
 
 	public Bodenstation(int port) {
 		robots = Collections.synchronizedList(new ArrayList<RoboterManagement>());
+		robotList = Collections.synchronizedList(new ArrayList<Robot>());
 		scanner = new Scanner(System.in);
 		this.portStation = port;
 		requestListener = new RequestListener(port);
@@ -96,7 +97,21 @@ public class Bodenstation {
 		getPlanets();
 		getRobots();
 
+		Thread thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while(!Thread.currentThread().isInterrupted()){
 
+					Thread.currentThread().sleep(15000);
+					moveAllRobots();
+					}
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		});
+		thread.start();
 	}
 
 	public void getPlanets() {
@@ -324,9 +339,9 @@ public class Bodenstation {
 		return false;
 	}
 
-	public boolean noKollision() {
+	public boolean noKollision(Robot movingRobot) {
 		long planetId = currentRobot.getPlanetId();
-		Robot movingRobot = currentRobot;
+
 		for (Robot robot : robotList) {
 			if (robot.getPlanetId() == planetId) {
 				if (robot.getX() == getSpecificRM(movingRobot.getId()).getNewX() && robot.getY() == getSpecificRM(movingRobot.getId()).getNewY()) {
@@ -373,7 +388,7 @@ public class Bodenstation {
 		
 		//Roboter läuft bis an den Rand
 		while(robot.getX() != 0 && robot.getStatus() != Status.CRASHED) {
-			if(noKollision()) {
+			if(noKollision(robot)) {
 				getSpecificRM(robot.getId()).sendToRobot("scan");
 				TimeUnit.SECONDS.sleep(5);
 				getSpecificRM(robot.getId()).sendToRobot("mvscan");
@@ -389,7 +404,7 @@ public class Bodenstation {
 		
 		//Roboter läuft bis in die linke obere Ecke
 		while(robot.getY() != 0 && robot.getStatus() != Status.CRASHED) {
-			if(noKollision()) {
+			if(noKollision(robot)) {
 				getSpecificRM(robot.getId()).sendToRobot("scan");
 				TimeUnit.SECONDS.sleep(5);
 				getSpecificRM(robot.getId()).sendToRobot("mvscan");
@@ -406,7 +421,7 @@ public class Bodenstation {
 		while(robot.getStatus() != Status.CRASHED && !endOfPlanet(robot, planet)) {
 			// Laufe ganz nach Rechts
 			while(robot.getX() != planet.getWidth()-1 && !endOfPlanet(robot, planet)) {
-				if(noKollision()) {
+				if(noKollision(robot)) {
 					getSpecificRM(robot.getId()).sendToRobot("scan");
 					TimeUnit.SECONDS.sleep(5);
 					getSpecificRM(robot.getId()).sendToRobot("mvscan");
@@ -417,7 +432,7 @@ public class Bodenstation {
 			if(!endOfPlanet(robot, planet)) {
 			getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
 			TimeUnit.SECONDS.sleep(5);
-			if(noKollision()) {
+			if(noKollision(robot)) {
 				getSpecificRM(robot.getId()).sendToRobot("scan");
 				TimeUnit.SECONDS.sleep(5);
 				getSpecificRM(robot.getId()).sendToRobot("mvscan");
@@ -429,7 +444,7 @@ public class Bodenstation {
 			
 			//Laufe nach ganz links
 			while(robot.getX() != 0 && !endOfPlanet(robot, planet)) {
-				if(noKollision()) {
+				if(noKollision(robot)) {
 					getSpecificRM(robot.getId()).sendToRobot("scan");
 					TimeUnit.SECONDS.sleep(5);
 					getSpecificRM(robot.getId()).sendToRobot("mvscan");
@@ -440,7 +455,7 @@ public class Bodenstation {
 			if(!endOfPlanet(robot, planet)) {
 			getSpecificRM(robot.getId()).sendToRobot("rotate:LEFT");
 			TimeUnit.SECONDS.sleep(5);
-			if(noKollision()) {
+			if(noKollision(robot)) {
 				getSpecificRM(robot.getId()).sendToRobot("scan");
 				TimeUnit.SECONDS.sleep(5);
 				getSpecificRM(robot.getId()).sendToRobot("mvscan");
@@ -462,6 +477,16 @@ public class Bodenstation {
 		
 	return false;
 	}
+
+	public long getPlanetId(String planetName){
+		for (Planet planet : planetList){
+			if(planet.getName().equalsIgnoreCase(planetName)){
+				return planet.getId();
+
+			}
+		}
+		return 0;
+	}
 	
 	//
 
@@ -482,7 +507,7 @@ public class Bodenstation {
 					System.out.println("Nenne den Planetennamen, auf den der Roboter geschickt werden soll");
 					String planetName = scanner.nextLine();
 					if (checkPlanetName(planetName)) {
-						currentRobot.setPlanetId(currentPlanet.getId());
+						currentRobot.setPlanetId(getPlanetId(planetName));
 						System.out.println("Roboter " + robotName + " wurder erstellt");
 					}
 				} else {
@@ -508,7 +533,7 @@ public class Bodenstation {
 				}
 
 			} else if (eingabe.equalsIgnoreCase("move")) {
-				if (noKollision()) {
+				if (noKollision(currentRobot)) {
 					getRM().sendToRobot(eingabe);
 				}
 
@@ -516,7 +541,7 @@ public class Bodenstation {
 				getRM().sendToRobot(eingabe);
 
 			} else if (eingabe.equalsIgnoreCase("mvscan")) {
-				if (noKollision()) {
+				if (noKollision(currentRobot)) {
 					getRM().sendToRobot(eingabe);
 				}
 
@@ -602,18 +627,29 @@ public class Bodenstation {
 	public void moveAllRobots() throws InterruptedException {
 		Planet planet;
 		for(Robot robot : robotList){
-		Random random = new Random(2);
+		Random random = new Random();
+		int zahl = random.nextInt(3);
 		if(robot.isMeldungToStation() && robot.isLanded()) {
 			planet = getPlanet(robot.getPlanetId());
 			getSpecificRM(robot.getId()).sendToRobot("scan");
 			TimeUnit.SECONDS.sleep(5);
-			if(noKollision() && robot.getX() > 0 && robot.getY() > 0 && robot.getX() < planet.getWidth() && robot.getY() < planet.getWidth()){
+			if(noKollision(robot) && robot.getX() > 0 && robot.getY() > 0 && robot.getX() < planet.getWidth()-1 && robot.getY() < planet.getHeight()-1){
 				getSpecificRM(robot.getId()).sendToRobot("mvscan");
 				TimeUnit.SECONDS.sleep(5);
-			}
-			if(random.nextInt() == 1){
+			}else{
 				getSpecificRM(robot.getId()).sendToRobot("rotate:LEFT");
-			}else if(random.nextInt() == 2){
+				TimeUnit.SECONDS.sleep(5);
+				getSpecificRM(robot.getId()).sendToRobot("rotate:LEFT");
+				TimeUnit.SECONDS.sleep(5);
+				if(noKollision(robot)){
+
+				getSpecificRM(robot.getId()).sendToRobot("mvscan");
+					TimeUnit.SECONDS.sleep(5);
+				}
+			}
+			if(zahl == 1){
+				getSpecificRM(robot.getId()).sendToRobot("rotate:LEFT");
+			}else if(zahl == 2){
 				getSpecificRM(robot.getId()).sendToRobot("rotate:RIGHT");
 			}
 		}
