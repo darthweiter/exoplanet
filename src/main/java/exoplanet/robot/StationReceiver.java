@@ -35,6 +35,7 @@ public class StationReceiver extends Thread{
 	@Override
 	public void run() {
 		String commandStation;
+		// Empfange Nachrichten von der Bodenstation
 		while(!robot.getStatus().equals(Status.CRASHED)) {
 			try {
 				commandStation = in.readLine();

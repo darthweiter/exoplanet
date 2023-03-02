@@ -50,6 +50,7 @@ public class RoboterManagement extends Thread {
   @Override
   public void run() {
     String messageFromRobot;
+    // Empfange und verarbeite Nachrichten vom Roboter
     try {
       while (true) {
         messageFromRobot = in.readLine();
@@ -71,6 +72,7 @@ public class RoboterManagement extends Thread {
     }
   }
 
+  // Verarbeite die Nachricht vom Roboter
   private void executeReceivedCommand(AReceiveCommand command) {
     switch (Command.valueOf(command.getCmd())) {
 			case landed -> {
@@ -138,6 +140,7 @@ public class RoboterManagement extends Thread {
 				robot);
 	}
 
+// Neue X Koordinate vom Roboter, wenn er sich bewegen würde
   public int getNewX() {
     if (robot.getDirection() == DIRECTION.EAST) {
       return robot.getX() + 1;
@@ -147,7 +150,7 @@ public class RoboterManagement extends Thread {
     return robot.getX();
 
   }
-
+//Neue Y Koordinate vom Roboter, wenn er sich bewegen würde
   public int getNewY() {
     if (robot.getDirection() == DIRECTION.NORTH) {
       return robot.getY() - 1;

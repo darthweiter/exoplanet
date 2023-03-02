@@ -82,6 +82,7 @@ public class Robot {
     }
   }
 
+  // Den Befehl von der Bodenstation verarbeiten
   private void executeSendCommand(ASendCommand command) {
     switch (Command.valueOf(command.getCmd())) {
       case orbit -> {
@@ -113,6 +114,7 @@ public class Robot {
     }
   }
 
+  // Die Nachricht vom Exoplaneten verarbeiten
   private void executeReceivedCommand(AReceiveCommand command) {
     switch (Command.valueOf(command.getCmd())) {
       case init, scaned, error -> {

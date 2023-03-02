@@ -67,13 +67,13 @@ public class Bodenstation {
 		@Override
 		public void run() {
 			try {
+				// Ist für den Verbindungsaufbau zwischen Roboter und Bodenstation zuständig
 				serverSocket = new ServerSocket(port);
 //				serverSocket.setSoTimeout(2000);
 
 				while (!Thread.interrupted()) {
 					try {
 						Socket robotSocket = serverSocket.accept();
-						System.out.println("cuurentRobot: " + currentRobot);
 						Robot robotTemp = currentRobot;
 						robots.add(new RoboterManagement(Bodenstation.this, robotSocket, robotTemp));
 					} catch (SocketTimeoutException e) {
@@ -114,6 +114,7 @@ public class Bodenstation {
 		thread.start();
 	}
 
+	// Hole alle Planeten in der Datenbank
 	public void getPlanets() {
 		HttpResponse response = createRestRequest("GET", "http://localhost:12345/api/v1/planeten", null);
 
@@ -134,6 +135,7 @@ public class Bodenstation {
 		}
 	}
 
+	// Hole alle Roboter von der Datenbank
 	public void getRobots() {
 		HttpResponse response = createRestRequest("GET", "http://localhost:12345/api/v1/roboter", null);
 		Robot[] array;
@@ -156,6 +158,7 @@ public class Bodenstation {
 		}
 	}
 
+	// Überprüft, ob ein neu ertellter Roboter einen komplett neuen Planeten erkundent hat oder nicht
 	public void isPlanetKnown(ReceiveCommandInit command) {
 		try {
 			Planet newPlanet = null;
@@ -163,6 +166,7 @@ public class Bodenstation {
 			Robot robotTemp;
 			boolean isNewPlanet = false;
 			HttpResponse response = null;
+			// Überprüfe ob Planet schon bekannt ist, komplett neue Planeten haben die id 0
 			for (Planet planet : planetList) {
 				if (planet.getId() == 0) {
 					newPlanet = planet;
@@ -170,6 +174,7 @@ public class Bodenstation {
 				}
 			}
 
+			//Planet ist unbekannt und wird sowie der Roboter in der Datenbank gespeichert
 			if (isNewPlanet) {
 				planetTemp = new Planet(0, newPlanet.getName(), command.getSize().width(), command.getSize().height());
 				response = createRestRequest("POST", "http://localhost:12345/api/v1/planeten", planetTemp);
@@ -182,6 +187,7 @@ public class Bodenstation {
 				planetTemp = mapper.readValue(contentValue, Planet.class);
 				currentRobot.setPlanetId(planetTemp.getId());
 
+				
 				for (int i = 0; i <= planetList.size() - 1; i++) {
 					if (planetList.get(i).getName().equalsIgnoreCase(planetTemp.getName())) {
 						planetList.get(i).setId(planetTemp.getId());
@@ -200,7 +206,8 @@ public class Bodenstation {
 					}
 				}
 			}
-
+			
+			// Planet ist schon bekannt und nur der Roboter wird in der Datenbak gespeichert
 			if (!isNewPlanet) {
 				response = createRestRequest("POST", "http://localhost:12345/api/v1/roboter", currentRobot);
 				robotTemp = mapper.readValue(response.getEntity().getContent(), Robot.class);
@@ -242,10 +249,9 @@ public class Bodenstation {
 		return scanner.nextLine();
 	}
 
+	// Bekomme das Management für den aktuellen Roboter
 	public RoboterManagement getRM() {
 		for (RoboterManagement rm : robots) {
-			System.out.println("currentrobot id " + currentRobot);
-			System.out.println(robots.size());
 			if (currentRobot != null && rm.getRobot().getName().equals(currentRobot.getName())) {
 				return rm;
 			}
@@ -275,6 +281,7 @@ public class Bodenstation {
 		System.out.println("shutdown -> Bodenstation wird geschlossen");
 	}
 
+	// Überprüfe, ob der Name des Roboters nicht schon vergeben ist
 	public boolean checkRobotName(String eingabeRobotName) {
 		for (Robot robot : robotList) {
 			if (robot.getName().equals(eingabeRobotName)) {
@@ -284,7 +291,8 @@ public class Bodenstation {
 		return true;
 
 	}
-
+	
+	// Hier wird die REST-Request erstellt und versendet
 	public HttpResponse createRestRequest(String requestType, String uri, Object object) {
 
 		HttpClient client = HttpClientBuilder.create().build();
@@ -326,6 +334,7 @@ public class Bodenstation {
 
 	}
 
+	// Überprüfe, ob der Name des Planeten nicht schon vergeben ist
 	public boolean checkPlanetName(String planetName) {
 		if (planetList.size() == 0) {
 			return true;
@@ -338,7 +347,8 @@ public class Bodenstation {
 		}
 		return false;
 	}
-
+	
+	//Kollisionserkennung
 	public boolean noKollision(Robot movingRobot) {
 		long planetId = currentRobot.getPlanetId();
 
@@ -374,8 +384,8 @@ public class Bodenstation {
 	
 	// Roboter bewegt sich nach lniks oben
 	// Dann von links nach ganz rechts
-	// Dann in die nächste Zeile und dann von rechts nach links bis alle Zeilen
-	public void autoMove2() throws InterruptedException {
+	// Dann in die nächste Zeile und dann von rechts nach links bis in die letze Zeile
+	public void autoExplore() throws InterruptedException {
 		Robot robot = currentRobot;
 		boolean planetExplored = false;
 		Planet planet = getPlanet(robot.getPlanetId());
@@ -488,11 +498,9 @@ public class Bodenstation {
 		return 0;
 	}
 	
-	//
-
+	// Eingabe für die Befehle
 	public void run() {
 		boolean running = true;
-//		currentRobot = null;
 
 		while (running) {
 			String eingabe = scanner.nextLine();
@@ -613,7 +621,7 @@ public class Bodenstation {
 			}else if(eingabe.equalsIgnoreCase("explore")) {
 				System.out.println("Roboter erkundet automatisch");
 				try {
-					autoMove2();
+					autoExplore();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -624,6 +632,7 @@ public class Bodenstation {
 		}
 	}
 
+	//Automatische Steuerung aller Roboter 
 	public void moveAllRobots() throws InterruptedException {
 		Planet planet;
 		for(Robot robot : robotList){
