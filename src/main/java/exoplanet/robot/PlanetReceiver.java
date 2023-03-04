@@ -39,18 +39,10 @@ public class PlanetReceiver extends Thread {
 	public void run() {
 		try {
 			String messagePlanet;
-			//Tritt in die Umlaufbahn
-			//sendToPlanet("orbit:" + robot.getName());
-			// Bekomme Planetendaten
-			//messagePlanet = in.readLine();
-			// sende Planetengröße zur Bodenstation mit PlanentenId um zu wissen von wlechem Planeten sie sind
-			//sendToStation(messagePlanet + "|" + robot.getPlanetId());
-
+			// Empfange Nachrichten des Exoplanten
 			while (!(robot.getStatus() == Status.CRASHED)) {
-				System.out.println("warte auf planet");
 				messagePlanet = in.readLine();
-				System.out.println("nachricht erhalten");
-				System.out.println(messagePlanet);
+				System.out.println("Nachricht vom Planet: " + messagePlanet);
 				ACommandClass command;
 				if(useJson) {
 					command = CommandParser.parseJson(messagePlanet);

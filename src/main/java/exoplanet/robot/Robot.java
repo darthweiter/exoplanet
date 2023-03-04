@@ -8,11 +8,13 @@ import exoplanet.commands.Command;
 import exoplanet.commands.model.DIRECTION;
 import exoplanet.commands.model.Position;
 import exoplanet.commands.receive.AReceiveCommand;
+import exoplanet.commands.receive.ReceiveCommandCharged;
 import exoplanet.commands.receive.ReceiveCommandMoveScaned;
 import exoplanet.commands.receive.ReceiveCommandMoved;
 import exoplanet.commands.receive.ReceiveCommandPosition;
 import exoplanet.commands.receive.ReceiveCommandRotated;
 import exoplanet.commands.send.ASendCommand;
+import exoplanet.commands.send.SendCommandCharge;
 import exoplanet.commands.send.SendCommandLand;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -40,6 +42,12 @@ public class Robot {
   private StationReceiver stationReceiver;
 
   private boolean useJson;
+
+
+
+  private boolean meldungToStation;
+
+  private boolean landed;
 
   public Robot() {
 
@@ -74,6 +82,7 @@ public class Robot {
     }
   }
 
+  // Den Befehl von der Bodenstation verarbeiten
   private void executeSendCommand(ASendCommand command) {
     switch (Command.valueOf(command.getCmd())) {
       case orbit -> {
@@ -85,7 +94,11 @@ public class Robot {
         updatePosition(specificCommand.getPosition());
         sendToPlanet(command);
       }
-      case scan, move, mvscan, rotate, getpos -> {
+      case mvscan, move-> {
+        meldungToStation = false;
+        sendToPlanet(command);
+      }
+      case scan, rotate, getpos -> {
         sendToPlanet(command);
       }
       case exit -> {
@@ -95,15 +108,21 @@ public class Robot {
       }
       case charge -> {
         //TODO advancedLevel;
-//					SendCommandCharge specificCommand =(SendCommandCharge) command;
-//					sendToPlanet(command);
+		SendCommandCharge specificCommand =(SendCommandCharge) command;
+		sendToPlanet(command);
       }
     }
   }
 
+  // Die Nachricht vom Exoplaneten verarbeiten
   private void executeReceivedCommand(AReceiveCommand command) {
     switch (Command.valueOf(command.getCmd())) {
-      case init, landed, scaned, error -> {
+      case init, scaned, error -> {
+
+        sendToStation(command);
+      }
+      case landed -> {
+        landed = true;
         sendToStation(command);
       }
       case moved -> {
@@ -133,7 +152,11 @@ public class Robot {
       }
       case charged -> {
         //TODO advancedLevel;
-//					sendToStation(command);
+    	ReceiveCommandCharged specificCommand = (ReceiveCommandCharged) command;
+    	setTemperatur(specificCommand.getStatus().temp());
+  		setEnergie(specificCommand.getStatus().energy());
+		sendToStation(command);
+		
       }
       case status -> {
         //TODO advancedLevel;
@@ -145,7 +168,7 @@ public class Robot {
       }
     }
   }
-
+  
   private void updatePosition(Position position) {
     x = position.x();
     y = position.y();
@@ -243,6 +266,20 @@ public class Robot {
 	public void setEnergie(double energie) {
 		this.energie = energie;
 	}
-	
 
+  public boolean isMeldungToStation() {
+    return meldungToStation;
+  }
+
+  public void setMeldungToStation(boolean meldungToStation) {
+    this.meldungToStation = meldungToStation;
+  }
+
+  public boolean isLanded() {
+    return landed;
+  }
+
+  public void setLanded(boolean landed) {
+    this.landed = landed;
+  }
 }
